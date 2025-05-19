@@ -10,6 +10,7 @@ import (
 	"github.com/chrishrb/blog-microservice/post-service/config"
 	"github.com/chrishrb/blog-microservice/post-service/store"
 	oapimiddleware "github.com/oapi-codegen/nethttp-middleware"
+	"github.com/riandyrn/otelchi"
 	"github.com/rs/cors"
 	"github.com/unrolled/secure"
 	"k8s.io/utils/clock"
@@ -42,7 +43,12 @@ func NewApiHandler(settings config.ApiSettings, engine store.Engine) http.Handle
 	logger := middleware.RequestLogger(logFormatter{endpoint: "api"})
 	swagger, _ := api.GetSwagger()
 
-	r.Use(middleware.Recoverer, secureMiddleware.Handler, cors.Default().Handler)
+	r.Use(
+		middleware.Recoverer,
+		secureMiddleware.Handler,
+		cors.Default().Handler,
+		otelchi.Middleware("api", otelchi.WithChiRoutes(r)),
+	)
 	r.Get("/health", health)
 	r.Handle("/metrics", promhttp.Handler())
 	r.Get("/post-service/openapi.json", getApiSwaggerJson)
