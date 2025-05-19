@@ -1,9 +1,12 @@
 package store
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type User struct {
-	ID        int
+	ID        string
 	Email     string
 	FirstName string
 	LastName  string
@@ -13,9 +16,8 @@ type User struct {
 }
 
 type UserStore interface {
-	CreateUser(user *User) (*User, error)
-	UpdateUser(user *User) (*User, error)
-	LookupUser(ID int) (*User, error)
-	ListUsers() ([]*User, error)
-	DeleteUser(ID int) error
+	SetUser(ctx context.Context, user *User) error
+	LookupUser(ctx context.Context, ID string) (*User, error)
+	ListUsers(ctx context.Context, offset, limit int) ([]*User, error)
+	DeleteUser(ctx context.Context, ID string) error
 }

@@ -12,10 +12,10 @@ import (
 // BaseConfig provides the data structures that represent the configuration
 // and provides the ability to load the configuration from a YAML file.
 type BaseConfig struct {
-	Api                       ApiSettingsConfig               `mapstructure:"api" json:"api" validate:"required"`
-	Transport                 TransportConfig                 `mapstructure:"transport" json:"transport" validate:"required"`
-	Observability             ObservabilitySettingsConfig     `mapstructure:"observability" json:"observability" validate:"required"`
-	Storage                   StorageConfig                   `mapstructure:"storage" json:"storage" validate:"required"`
+	Api           ApiSettingsConfig           `mapstructure:"api" json:"api" validate:"required"`
+	Transport     TransportConfig             `mapstructure:"transport" json:"transport" validate:"required"`
+	Observability ObservabilitySettingsConfig `mapstructure:"observability" json:"observability" validate:"required"`
+	Storage       StorageConfig               `mapstructure:"storage" json:"storage" validate:"required"`
 }
 
 // DefaultConfig provides the default configuration. The configuration
@@ -30,7 +30,7 @@ var DefaultConfig = BaseConfig{
 		Type: "kafka",
 		Kafka: &KafkaSettingsConfig{
 			Urls:           []string{"localhost:9092"},
-			Group:          "post-service",
+			Group:          "user-service",
 			ConnectTimeout: "10s",
 		},
 	},

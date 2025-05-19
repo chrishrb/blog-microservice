@@ -7,10 +7,10 @@ transport:
   kafka:
     urls:
       - localhost:9092
-    group: post-service
+    group: user-service
 observability:
   log_format: text
   otel_collector_addr: localhost:4317
-  tls_keylog_file: /keylog/post-service.log
+  tls_keylog_file: /keylog/user-service.log
 storage:
   type: in_memory

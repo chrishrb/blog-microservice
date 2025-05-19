@@ -10,8 +10,8 @@ import (
 
 	"github.com/chrishrb/blog-microservice/internal/transport"
 	"github.com/chrishrb/blog-microservice/internal/transport/kafka"
-	"github.com/chrishrb/blog-microservice/post-service/store"
-	"github.com/chrishrb/blog-microservice/post-service/store/inmemory"
+	"github.com/chrishrb/blog-microservice/user-service/store"
+	"github.com/chrishrb/blog-microservice/user-service/store/inmemory"
 	"github.com/subnova/slog-exporter/slogtrace"
 	"go.opentelemetry.io/contrib/detectors/gcp"
 	"go.opentelemetry.io/otel"
@@ -69,7 +69,7 @@ func Configure(ctx context.Context, cfg *BaseConfig) (c *Config, err error) {
 		return nil, err
 	}
 
-	c.Tracer = c.TracerProvider.Tracer("post-service")
+	c.Tracer = c.TracerProvider.Tracer("user-service")
 
 	c.Storage, err = getStorage(ctx, &cfg.Storage)
 	if err != nil {
@@ -110,7 +110,7 @@ func getTracerProvider(ctx context.Context, collectorAddr string) (*trace.Tracer
 			resource.WithTelemetrySDK(),
 			resource.WithAttributes(
 				// the service name used to display traces in backends
-				semconv.ServiceName("blog-post-service"),
+				semconv.ServiceName("blog-user-service"),
 			),
 		)
 		if err != nil {
