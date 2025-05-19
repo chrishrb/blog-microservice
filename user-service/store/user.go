@@ -8,10 +8,9 @@ import (
 )
 
 const (
-	StatusActive   = "active"
-	StatusInactive = "inactive"
-	StatusPending  = "pending"
-	StatusBanned   = "banned"
+	StatusActive  = "active"
+	StatusPending = "pending"
+	StatusBanned  = "banned"
 )
 
 const (

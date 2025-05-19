@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/chrishrb/blog-microservice/internal/api_utils"
+	"github.com/chrishrb/blog-microservice/internal/auth"
 	"github.com/chrishrb/blog-microservice/user-service/service"
 	"github.com/chrishrb/blog-microservice/user-service/store"
 	"github.com/go-chi/render"
@@ -32,14 +33,17 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 		FirstName:    req.FirstName,
 		LastName:     req.LastName,
 		PasswordHash: passwordHash,
-		Status:       store.StatusPending,
-		Role:         store.RoleUser,
+		// TODO: after mail verification set status here to PENDING
+		Status: store.StatusActive,
+		Role:   store.RoleUser,
 	}
 	err = s.engine.SetUser(r.Context(), user)
 	if err != nil {
 		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
 	}
+
+	// TODO: Send mail to verify the email address
 
 	render.Status(r, http.StatusCreated)
 	render.Render(w, r, &User{
@@ -158,9 +162,92 @@ func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request, ID openapi_t
 }
 
 func (s *Server) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement current user retrieval logic
+	userID := r.Context().Value(auth.UserIDContextKey)
+	if userID == nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(errors.New("userID not found in context")))
+		return
+	}
+
+	user, err := s.engine.LookupUser(r.Context(), userID.(uuid.UUID))
+	if err != nil || user == nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(errors.New("user lookup error")))
+		return
+	}
+
+	render.Render(w, r, &User{
+		Id:        user.ID,
+		Email:     openapi_types.Email(user.Email),
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Role:      UserRole(user.Role),
+		Status:    UserStatus(user.Status),
+	})
 }
 
 func (s *Server) UpdateCurrentUser(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement current user update logic
+	userID := r.Context().Value(auth.UserIDContextKey)
+	if userID == nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(errors.New("userID not found in context")))
+		return
+	}
+
+	user, err := s.engine.LookupUser(r.Context(), userID.(uuid.UUID))
+	if err != nil || user == nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(errors.New("user lookup error")))
+		return
+	}
+
+	render.Render(w, r, &User{
+		Id:        user.ID,
+		Email:     openapi_types.Email(user.Email),
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Role:      UserRole(user.Role),
+		Status:    UserStatus(user.Status),
+	})
+
+	// Afterwards update the user
+	req := new(UserUpdateCurrent)
+	if err := render.Bind(r, req); err != nil {
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(err))
+		return
+	}
+
+	if ok := service.VerifyPassword(req.CurrentPassword, user.PasswordHash); !ok {
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(errors.New("current password is incorrect")))
+		return
+	}
+
+	// TODO: Send email verification if email is updated
+	if req.Email != nil {
+		user.Email = string(*req.Email)
+	}
+	if req.FirstName != nil {
+		user.FirstName = *req.FirstName
+	}
+	if req.LastName != nil {
+		user.LastName = *req.LastName
+	}
+	if req.Password != nil {
+		user.PasswordHash, err = service.HashPassword(*req.Password)
+		if err != nil {
+			_ = render.Render(w, r, api_utils.ErrInternalError(errors.New("failed to hash password")))
+			return
+		}
+	}
+
+	err = s.engine.SetUser(r.Context(), user)
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
+		return
+	}
+
+	render.Render(w, r, &User{
+		Id:        user.ID,
+		Email:     openapi_types.Email(user.Email),
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Role:      UserRole(user.Role),
+		Status:    UserStatus(user.Status),
+	})
 }

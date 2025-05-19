@@ -10,10 +10,13 @@ func (c UserUpdate) Bind(r *http.Request) error {
 	return nil
 }
 
-func (c User) Render(w http.ResponseWriter, r *http.Request) error {
+func (c UserUpdateCurrent) Bind(r *http.Request) error {
 	return nil
 }
 
+func (c User) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}
 
 func (c LoginRequest) Bind(r *http.Request) error {
 	return nil
@@ -22,4 +25,3 @@ func (c LoginRequest) Bind(r *http.Request) error {
 func (c AuthResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
-
