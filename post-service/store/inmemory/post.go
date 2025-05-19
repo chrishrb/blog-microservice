@@ -35,17 +35,17 @@ func (s *Store) ListPosts(ctx context.Context, offset, limit int) ([]*store.Post
 	s.Lock()
 	defer s.Unlock()
 
-	var result []*store.Post
+	var posts []*store.Post
 	for _, post := range s.posts {
-		result = append(result, post)
+		posts = append(posts, post)
 
-		if len(result) >= limit {
+		if len(posts) >= limit {
 			break
 		}
 	}
 
-	end := min(offset+limit, len(result))
-	return result[offset:end], nil
+	end := min(offset+limit, len(posts))
+	return posts[offset:end], nil
 }
 
 func (s *Store) DeletePost(ctx context.Context, ID string) error {

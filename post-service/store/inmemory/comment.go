@@ -48,21 +48,21 @@ func (s *Store) ListCommentsByPostID(ctx context.Context, postID string, offset,
 		return nil, nil
 	}
 
-	var result []*store.Comment
+	var comments []*store.Comment
 	for _, comment := range s.comments[postID] {
-		result = append(result, comment)
+		comments = append(comments, comment)
 
-		if len(result) >= limit {
+		if len(comments) >= limit {
 			break
 		}
 	}
 
-	if offset >= len(result) {
+	if offset >= len(comments) {
 		return []*store.Comment{}, nil
 	}
 
-	end := min(offset+limit, len(result))
-	return result[offset:end], nil
+	end := min(offset+limit, len(comments))
+	return comments[offset:end], nil
 }
 
 func (s *Store) DeleteComment(ctx context.Context, postID, ID string) error {
