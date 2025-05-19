@@ -27,17 +27,30 @@ const (
 
 // Defines values for UserRole.
 const (
-	UserRoleAdmin  UserRole = "admin"
-	UserRoleEditor UserRole = "editor"
-	UserRoleUser   UserRole = "user"
+	UserRoleAdmin UserRole = "admin"
+	UserRoleUser  UserRole = "user"
 )
 
 // Defines values for UserStatus.
 const (
-	Active   UserStatus = "active"
-	Banned   UserStatus = "banned"
-	Inactive UserStatus = "inactive"
-	Pending  UserStatus = "pending"
+	UserStatusActive   UserStatus = "active"
+	UserStatusBanned   UserStatus = "banned"
+	UserStatusInactive UserStatus = "inactive"
+	UserStatusPending  UserStatus = "pending"
+)
+
+// Defines values for UserUpdateRole.
+const (
+	UserUpdateRoleAdmin UserUpdateRole = "admin"
+	UserUpdateRoleUser  UserUpdateRole = "user"
+)
+
+// Defines values for UserUpdateStatus.
+const (
+	UserUpdateStatusActive   UserUpdateStatus = "active"
+	UserUpdateStatusBanned   UserUpdateStatus = "banned"
+	UserUpdateStatusInactive UserUpdateStatus = "inactive"
+	UserUpdateStatusPending  UserUpdateStatus = "pending"
 )
 
 // AuthResponse defines model for AuthResponse.
@@ -47,13 +60,6 @@ type AuthResponse struct {
 
 	// ExpiresIn Token expiration time in seconds
 	ExpiresIn int `json:"expiresIn"`
-
-	// RefreshToken Refresh token for obtaining new access tokens
-	RefreshToken string `json:"refreshToken"`
-
-	// TokenType Type of token, typically 'Bearer'
-	TokenType string `json:"tokenType"`
-	User      User   `json:"user"`
 }
 
 // Error defines model for Error.
@@ -87,12 +93,6 @@ type PasswordResetRequest struct {
 	Email openapi_types.Email `json:"email"`
 }
 
-// RefreshTokenRequest defines model for RefreshTokenRequest.
-type RefreshTokenRequest struct {
-	// RefreshToken Refresh token from previous authentication
-	RefreshToken string `json:"refreshToken"`
-}
-
 // User defines model for User.
 type User struct {
 	// CreatedAt When the user account was created
@@ -102,13 +102,13 @@ type User struct {
 	Email openapi_types.Email `json:"email"`
 
 	// FirstName User's first name
-	FirstName *string `json:"firstName,omitempty"`
+	FirstName string `json:"firstName"`
 
 	// Id Unique identifier for the user
 	Id openapi_types.UUID `json:"id"`
 
 	// LastName User's last name
-	LastName *string `json:"lastName,omitempty"`
+	LastName string `json:"lastName"`
 
 	// Role User's role in the system
 	Role UserRole `json:"role"`
@@ -118,9 +118,6 @@ type User struct {
 
 	// UpdatedAt When the user account was last updated
 	UpdatedAt time.Time `json:"updatedAt"`
-
-	// Username User's username
-	Username string `json:"username"`
 }
 
 // UserRole User's role in the system
@@ -129,26 +126,47 @@ type UserRole string
 // UserStatus User's account status
 type UserStatus string
 
-// UserList defines model for UserList.
-type UserList struct {
-	Data       []User `json:"data"`
-	Pagination struct {
-		// CurrentPage Current page number
-		CurrentPage *int `json:"currentPage,omitempty"`
+// UserCreate defines model for UserCreate.
+type UserCreate struct {
+	// Email User's email address
+	Email openapi_types.Email `json:"email"`
 
-		// Limit Number of items per page
-		Limit *int `json:"limit,omitempty"`
+	// FirstName User's first name
+	FirstName string `json:"firstName"`
 
-		// Pages Total number of pages
-		Pages *int `json:"pages,omitempty"`
+	// LastName User's last name
+	LastName string `json:"lastName"`
 
-		// Total Total number of users
-		Total *int `json:"total,omitempty"`
-	} `json:"pagination"`
+	// Password User's password
+	Password string `json:"password"`
 }
 
 // UserUpdate defines model for UserUpdate.
 type UserUpdate struct {
+	// Email User's email address
+	Email *openapi_types.Email `json:"email,omitempty"`
+
+	// FirstName User's first name
+	FirstName *string `json:"firstName,omitempty"`
+
+	// LastName User's last name
+	LastName *string `json:"lastName,omitempty"`
+
+	// Role User's role in the system
+	Role *UserUpdateRole `json:"role,omitempty"`
+
+	// Status User's account status
+	Status *UserUpdateStatus `json:"status,omitempty"`
+}
+
+// UserUpdateRole User's role in the system
+type UserUpdateRole string
+
+// UserUpdateStatus User's account status
+type UserUpdateStatus string
+
+// UserUpdateCurrent defines model for UserUpdateCurrent.
+type UserUpdateCurrent struct {
 	// CurrentPassword User's current password (required when changing password)
 	CurrentPassword string `json:"currentPassword"`
 
@@ -163,9 +181,6 @@ type UserUpdate struct {
 
 	// Password User's new password
 	Password *string `json:"password,omitempty"`
-
-	// Username User's username
-	Username *string `json:"username,omitempty"`
 }
 
 // BadRequest defines model for BadRequest.
@@ -198,11 +213,11 @@ type RequestPasswordResetJSONRequestBody = PasswordResetRequest
 // ResetPasswordJSONRequestBody defines body for ResetPassword for application/json ContentType.
 type ResetPasswordJSONRequestBody = PasswordResetConfirmation
 
-// RefreshTokenJSONRequestBody defines body for RefreshToken for application/json ContentType.
-type RefreshTokenJSONRequestBody = RefreshTokenRequest
+// CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
+type CreateUserJSONRequestBody = UserCreate
 
 // UpdateCurrentUserJSONRequestBody defines body for UpdateCurrentUser for application/json ContentType.
-type UpdateCurrentUserJSONRequestBody = UserUpdate
+type UpdateCurrentUserJSONRequestBody = UserUpdateCurrent
 
 // UpdateUserJSONRequestBody defines body for UpdateUser for application/json ContentType.
 type UpdateUserJSONRequestBody = UserUpdate
@@ -221,9 +236,6 @@ type ServerInterface interface {
 	// Reset password
 	// (POST /auth/password-reset/{token})
 	ResetPassword(w http.ResponseWriter, r *http.Request, token string)
-	// Refresh token
-	// (POST /auth/refresh)
-	RefreshToken(w http.ResponseWriter, r *http.Request)
 	// Get all users
 	// (GET /users)
 	ListUsers(w http.ResponseWriter, r *http.Request, params ListUsersParams)
@@ -241,7 +253,7 @@ type ServerInterface interface {
 	DeleteUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
 	// Get user by ID
 	// (GET /users/{userId})
-	LookupUserById(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
+	LookupUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
 	// Update user
 	// (PUT /users/{userId})
 	UpdateUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID)
@@ -272,12 +284,6 @@ func (_ Unimplemented) RequestPasswordReset(w http.ResponseWriter, r *http.Reque
 // Reset password
 // (POST /auth/password-reset/{token})
 func (_ Unimplemented) ResetPassword(w http.ResponseWriter, r *http.Request, token string) {
-	w.WriteHeader(http.StatusNotImplemented)
-}
-
-// Refresh token
-// (POST /auth/refresh)
-func (_ Unimplemented) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -313,7 +319,7 @@ func (_ Unimplemented) DeleteUser(w http.ResponseWriter, r *http.Request, userId
 
 // Get user by ID
 // (GET /users/{userId})
-func (_ Unimplemented) LookupUserById(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
+func (_ Unimplemented) LookupUser(w http.ResponseWriter, r *http.Request, userId openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -334,12 +340,6 @@ type MiddlewareFunc func(http.Handler) http.Handler
 
 // LoginUser operation middleware
 func (siw *ServerInterfaceWrapper) LoginUser(w http.ResponseWriter, r *http.Request) {
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.LoginUser(w, r)
@@ -375,12 +375,6 @@ func (siw *ServerInterfaceWrapper) LogoutUser(w http.ResponseWriter, r *http.Req
 // RequestPasswordReset operation middleware
 func (siw *ServerInterfaceWrapper) RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.RequestPasswordReset(w, r)
 	}))
@@ -406,34 +400,8 @@ func (siw *ServerInterfaceWrapper) ResetPassword(w http.ResponseWriter, r *http.
 		return
 	}
 
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.ResetPassword(w, r, token)
-	}))
-
-	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
-		handler = siw.HandlerMiddlewares[i](handler)
-	}
-
-	handler.ServeHTTP(w, r)
-}
-
-// RefreshToken operation middleware
-func (siw *ServerInterfaceWrapper) RefreshToken(w http.ResponseWriter, r *http.Request) {
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
-
-	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.RefreshToken(w, r)
 	}))
 
 	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
@@ -450,7 +418,7 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 	ctx := r.Context()
 
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{"all-users:r"})
 
 	r = r.WithContext(ctx)
 
@@ -486,12 +454,6 @@ func (siw *ServerInterfaceWrapper) ListUsers(w http.ResponseWriter, r *http.Requ
 
 // CreateUser operation middleware
 func (siw *ServerInterfaceWrapper) CreateUser(w http.ResponseWriter, r *http.Request) {
-
-	ctx := r.Context()
-
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
-
-	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CreateUser(w, r)
@@ -560,7 +522,7 @@ func (siw *ServerInterfaceWrapper) DeleteUser(w http.ResponseWriter, r *http.Req
 
 	ctx := r.Context()
 
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{"all-users:w"})
 
 	r = r.WithContext(ctx)
 
@@ -575,8 +537,8 @@ func (siw *ServerInterfaceWrapper) DeleteUser(w http.ResponseWriter, r *http.Req
 	handler.ServeHTTP(w, r)
 }
 
-// LookupUserById operation middleware
-func (siw *ServerInterfaceWrapper) LookupUserById(w http.ResponseWriter, r *http.Request) {
+// LookupUser operation middleware
+func (siw *ServerInterfaceWrapper) LookupUser(w http.ResponseWriter, r *http.Request) {
 
 	var err error
 
@@ -591,12 +553,12 @@ func (siw *ServerInterfaceWrapper) LookupUserById(w http.ResponseWriter, r *http
 
 	ctx := r.Context()
 
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{"all-users:r"})
 
 	r = r.WithContext(ctx)
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.LookupUserById(w, r, userId)
+		siw.Handler.LookupUser(w, r, userId)
 	}))
 
 	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
@@ -622,7 +584,7 @@ func (siw *ServerInterfaceWrapper) UpdateUser(w http.ResponseWriter, r *http.Req
 
 	ctx := r.Context()
 
-	ctx = context.WithValue(ctx, BearerAuthScopes, []string{})
+	ctx = context.WithValue(ctx, BearerAuthScopes, []string{"all-users:w"})
 
 	r = r.WithContext(ctx)
 
@@ -763,9 +725,6 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Post(options.BaseURL+"/auth/password-reset/{token}", wrapper.ResetPassword)
 	})
 	r.Group(func(r chi.Router) {
-		r.Post(options.BaseURL+"/auth/refresh", wrapper.RefreshToken)
-	})
-	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/users", wrapper.ListUsers)
 	})
 	r.Group(func(r chi.Router) {
@@ -781,7 +740,7 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Delete(options.BaseURL+"/users/{userId}", wrapper.DeleteUser)
 	})
 	r.Group(func(r chi.Router) {
-		r.Get(options.BaseURL+"/users/{userId}", wrapper.LookupUserById)
+		r.Get(options.BaseURL+"/users/{userId}", wrapper.LookupUser)
 	})
 	r.Group(func(r chi.Router) {
 		r.Put(options.BaseURL+"/users/{userId}", wrapper.UpdateUser)
@@ -793,41 +752,37 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"FERB4WyYoNCZEKxv1v8LAAD//x14mvuALQAA",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

@@ -6,6 +6,7 @@ import (
 	"k8s.io/utils/clock"
 
 	"github.com/chrishrb/blog-microservice/user-service/store"
+	"github.com/google/uuid"
 )
 
 // Store is an in-memory implementation of the store.Engine interface. As everything
@@ -14,12 +15,12 @@ import (
 type Store struct {
 	sync.Mutex
 	clock clock.PassiveClock
-	users map[string]*store.User
+	users map[uuid.UUID]*store.User
 }
 
 func NewStore(clock clock.PassiveClock) *Store {
 	return &Store{
 		clock: clock,
-		users: make(map[string]*store.User),
+		users: make(map[uuid.UUID]*store.User),
 	}
 }

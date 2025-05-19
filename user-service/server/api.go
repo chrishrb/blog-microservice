@@ -4,9 +4,11 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/chrishrb/blog-microservice/internal/auth"
 	"github.com/chrishrb/blog-microservice/user-service/api"
 	"github.com/chrishrb/blog-microservice/user-service/config"
 	"github.com/chrishrb/blog-microservice/user-service/store"
+	"github.com/getkin/kin-openapi/openapi3filter"
 	oapimiddleware "github.com/oapi-codegen/nethttp-middleware"
 	"github.com/riandyrn/otelchi"
 	"github.com/rs/cors"
@@ -18,8 +20,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func NewApiHandler(settings config.ApiSettings, engine store.Engine) http.Handler {
-	apiServer, err := api.NewServer(engine, clock.RealClock{})
+func NewApiHandler(settings config.ApiSettings, engine store.Engine, authService auth.AuthService) http.Handler {
+	apiServer, err := api.NewServer(engine, clock.RealClock{}, authService)
 	if err != nil {
 		panic(err)
 	}
@@ -47,10 +49,17 @@ func NewApiHandler(settings config.ApiSettings, engine store.Engine) http.Handle
 		cors.Default().Handler,
 		otelchi.Middleware("api", otelchi.WithChiRoutes(r)),
 	)
+
+	validator := oapimiddleware.OapiRequestValidatorWithOptions(swagger, &oapimiddleware.Options{
+		Options: openapi3filter.Options{
+			AuthenticationFunc: auth.NewAuthenticator(authService),
+		},
+	})
+
 	r.Get("/health", health)
 	r.Handle("/metrics", promhttp.Handler())
 	r.Get("/user-service/openapi.json", getApiSwaggerJson)
-	r.With(logger, oapimiddleware.OapiRequestValidator(swagger)).Mount("/user-service/v1", api.Handler(apiServer))
+	r.With(logger, validator).Mount("/user-service/v1", api.Handler(apiServer))
 	return r
 }
 

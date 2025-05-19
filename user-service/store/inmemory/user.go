@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/chrishrb/blog-microservice/user-service/store"
+	"github.com/google/uuid"
 )
 
 func (s *Store) SetUser(ctx context.Context, user *store.User) error {
@@ -20,7 +21,7 @@ func (s *Store) SetUser(ctx context.Context, user *store.User) error {
 	return nil
 }
 
-func (s *Store) LookupUser(ctx context.Context, ID string) (*store.User, error) {
+func (s *Store) LookupUser(ctx context.Context, ID uuid.UUID) (*store.User, error) {
 	s.Lock()
 	defer s.Unlock()
 
@@ -29,6 +30,19 @@ func (s *Store) LookupUser(ctx context.Context, ID string) (*store.User, error) 
 		return nil, nil
 	}
 	return user, nil
+}
+
+func (s *Store) LookupUserByEmail(ctx context.Context, email string) (*store.User, error) {
+	s.Lock()
+	defer s.Unlock()
+
+	for _, user := range s.users {
+		if user.Email == email {
+			return user, nil
+		}
+	}
+
+	return nil, nil
 }
 
 func (s *Store) ListUsers(ctx context.Context, offset, limit int) ([]*store.User, error) {
@@ -48,7 +62,7 @@ func (s *Store) ListUsers(ctx context.Context, offset, limit int) ([]*store.User
 	return users[offset:end], nil
 }
 
-func (s *Store) DeleteUser(ctx context.Context, ID string) error {
+func (s *Store) DeleteUser(ctx context.Context, ID uuid.UUID) error {
 	s.Lock()
 	defer s.Unlock()
 
