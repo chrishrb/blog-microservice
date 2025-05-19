@@ -7,7 +7,7 @@ import (
 )
 
 type Server struct {
-	engine store.Engine
+	engine  store.Engine
 	clock   clock.PassiveClock
 	openapi *openapi3.T
 }
@@ -19,7 +19,7 @@ func NewServer(engine store.Engine, clock clock.PassiveClock) (*Server, error) {
 	}
 
 	return &Server{
-		engine: engine,
+		engine:  engine,
 		clock:   clock,
 		openapi: swagger,
 	}, nil

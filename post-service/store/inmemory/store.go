@@ -13,15 +13,15 @@ import (
 // It is primarily provided to support unit testing.
 type Store struct {
 	sync.Mutex
-	clock       clock.PassiveClock
-	posts       map[string]*store.Post
-	comments    map[string]map[string]*store.Comment
+	clock    clock.PassiveClock
+	posts    map[string]*store.Post
+	comments map[string]map[string]*store.Comment
 }
 
 func NewStore(clock clock.PassiveClock) *Store {
 	return &Store{
-		clock:       clock,
-		posts:       make(map[string]*store.Post),
-		comments:    make(map[string]map[string]*store.Comment),
+		clock:    clock,
+		posts:    make(map[string]*store.Post),
+		comments: make(map[string]map[string]*store.Comment),
 	}
 }

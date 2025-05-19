@@ -14,7 +14,6 @@ func (c Post) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-
 func (c CommentCreate) Bind(r *http.Request) error {
 	return nil
 }
