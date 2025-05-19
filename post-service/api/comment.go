@@ -36,8 +36,10 @@ func (s *Server) CreateComment(w http.ResponseWriter, r *http.Request, postId st
 	})
 }
 
-func (s *Server) ListCommentsByPostId(w http.ResponseWriter, r *http.Request, postId string) {
-	comment, err := s.engine.ListCommentsByPostID(r.Context(), postId)
+func (s *Server) ListComments(w http.ResponseWriter, r *http.Request, postId string, params ListCommentsParams) {
+	offset, limit := getPaginationWithDefaults(params.Offset, params.Limit)
+
+	comment, err := s.engine.ListCommentsByPostID(r.Context(), postId, offset, limit)
 	if err != nil {
 		_ = render.Render(w, r, ErrInternalError(err))
 		return

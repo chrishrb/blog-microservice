@@ -39,7 +39,7 @@ func (s *Store) LookupComment(ctx context.Context, postID, ID string) (*store.Co
 	return comment, nil
 }
 
-func (s *Store) ListCommentsByPostID(ctx context.Context, postID string) ([]*store.Comment, error) {
+func (s *Store) ListCommentsByPostID(ctx context.Context, postID string, offset, limit int) ([]*store.Comment, error) {
 	s.Lock()
 	defer s.Unlock()
 
@@ -48,11 +48,21 @@ func (s *Store) ListCommentsByPostID(ctx context.Context, postID string) ([]*sto
 		return nil, nil
 	}
 
-	var comments []*store.Comment
+	var result []*store.Comment
 	for _, comment := range s.comments[postID] {
-		comments = append(comments, comment)
+		result = append(result, comment)
+
+		if len(result) >= limit {
+			break
+		}
 	}
-	return comments, nil
+
+	if offset >= len(result) {
+		return []*store.Comment{}, nil
+	}
+
+	end := min(offset+limit, len(result))
+	return result[offset:end], nil
 }
 
 func (s *Store) DeleteComment(ctx context.Context, postID, ID string) error {

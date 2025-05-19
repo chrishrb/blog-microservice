@@ -128,8 +128,10 @@ func (s *Server) UpdatePost(w http.ResponseWriter, r *http.Request, id string) {
 	})
 }
 
-func (s *Server) ListPosts(w http.ResponseWriter, r *http.Request) {
-	posts, err := s.engine.ListPosts(r.Context())
+func (s *Server) ListPosts(w http.ResponseWriter, r *http.Request, params ListPostsParams) {
+	offset, limit := getPaginationWithDefaults(params.Offset, params.Limit)
+
+	posts, err := s.engine.ListPosts(r.Context(), offset, limit)
 	if err != nil {
 		_ = render.Render(w, r, ErrInternalError(err))
 		return

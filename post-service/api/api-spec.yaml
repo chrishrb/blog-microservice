@@ -1,14 +1,41 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/OAI/OpenAPI-Specification/refs/tags/3.1.1/schemas/v3.1/schema.yaml
 openapi: 3.0.0
 info:
-  title: Blog post-service API
+  title: Post Service API
   description: API for managing blog posts and comments
   version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+
+tags:
+  - name: Posts
+    description: Post related endpoints
+  - name: Comments
+    description: Comments related endpoints
+
 paths:
   /posts:
     get:
       summary: List all posts
+      description: Retrieve a list of all posts
+      tags:
+        - Posts
       operationId: listPosts
+      parameters:
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
       responses:
         '200':
           description: List of posts retrieved successfully
@@ -50,6 +77,9 @@ paths:
           type: string
     get:
       summary: Get a post by ID
+      description: Retrieve a specific post by its ID
+      tags:
+        - Posts
       operationId: lookupPost
       responses:
         '200':
@@ -64,6 +94,9 @@ paths:
           $ref: '#/components/responses/InternalServerError'
     put:
       summary: Update a post
+      description: Update an existing post
+      tags:
+        - Posts
       operationId: updatePost
       requestBody:
         required: true
@@ -86,6 +119,9 @@ paths:
           $ref: '#/components/responses/InternalServerError'
     delete:
       summary: Delete a post
+      description: Delete a specific post by its ID
+      tags:
+        - Posts
       operationId: deletePost
       responses:
         '204':
@@ -102,8 +138,42 @@ paths:
         required: true
         schema:
           type: string
+    get:
+      summary: List all comments for a post
+      description: Retrieve a list of all comments for a specific post
+      tags:
+        - Comments
+      operationId: listComments
+      parameters:
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: List of comments retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comment'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
     post:
       summary: Create a new comment
+      description: Create a new comment for a specific post
+      tags:
+        - Comments
       operationId: createComment
       requestBody:
         required: true
@@ -137,6 +207,9 @@ paths:
           type: string
     get:
       summary: Get a comment by ID
+      description: Retrieve a specific comment by its ID
+      tags:
+        - Comments
       operationId: lookupComment
       responses:
         '200':
@@ -151,6 +224,9 @@ paths:
           $ref: '#/components/responses/InternalServerError'
     put:
       summary: Update a comment
+      description: Update an existing comment
+      tags:
+        - Comments
       operationId: updateComment
       requestBody:
         required: true
@@ -173,6 +249,9 @@ paths:
           $ref: '#/components/responses/InternalServerError'
     delete:
       summary: Delete a comment
+      description: Delete a specific comment by its ID
+      tags:
+        - Comments
       operationId: deleteComment
       responses:
         '204':

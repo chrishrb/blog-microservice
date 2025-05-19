@@ -81,6 +81,18 @@ type InternalServerError = Error
 // NotFound defines model for NotFound.
 type NotFound = Error
 
+// ListPostsParams defines parameters for ListPosts.
+type ListPostsParams struct {
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// ListCommentsParams defines parameters for ListComments.
+type ListCommentsParams struct {
+	Offset *int `form:"offset,omitempty" json:"offset,omitempty"`
+	Limit  *int `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
 // CreatePostJSONRequestBody defines body for CreatePost for application/json ContentType.
 type CreatePostJSONRequestBody = PostCreate
 
@@ -97,7 +109,7 @@ type UpdateCommentJSONRequestBody = CommentUpdate
 type ServerInterface interface {
 	// List all posts
 	// (GET /posts)
-	ListPosts(w http.ResponseWriter, r *http.Request)
+	ListPosts(w http.ResponseWriter, r *http.Request, params ListPostsParams)
 	// Create a new post
 	// (POST /posts)
 	CreatePost(w http.ResponseWriter, r *http.Request)
@@ -110,6 +122,9 @@ type ServerInterface interface {
 	// Update a post
 	// (PUT /posts/{id})
 	UpdatePost(w http.ResponseWriter, r *http.Request, id string)
+	// List all comments for a post
+	// (GET /posts/{postId}/comments)
+	ListComments(w http.ResponseWriter, r *http.Request, postId string, params ListCommentsParams)
 	// Create a new comment
 	// (POST /posts/{postId}/comments)
 	CreateComment(w http.ResponseWriter, r *http.Request, postId string)
@@ -130,7 +145,7 @@ type Unimplemented struct{}
 
 // List all posts
 // (GET /posts)
-func (_ Unimplemented) ListPosts(w http.ResponseWriter, r *http.Request) {
+func (_ Unimplemented) ListPosts(w http.ResponseWriter, r *http.Request, params ListPostsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -155,6 +170,12 @@ func (_ Unimplemented) LookupPost(w http.ResponseWriter, r *http.Request, id str
 // Update a post
 // (PUT /posts/{id})
 func (_ Unimplemented) UpdatePost(w http.ResponseWriter, r *http.Request, id string) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// List all comments for a post
+// (GET /posts/{postId}/comments)
+func (_ Unimplemented) ListComments(w http.ResponseWriter, r *http.Request, postId string, params ListCommentsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -194,8 +215,29 @@ type MiddlewareFunc func(http.Handler) http.Handler
 // ListPosts operation middleware
 func (siw *ServerInterfaceWrapper) ListPosts(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListPostsParams
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", r.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.ListPosts(w, r)
+		siw.Handler.ListPosts(w, r, params)
 	}))
 
 	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
@@ -285,6 +327,50 @@ func (siw *ServerInterfaceWrapper) UpdatePost(w http.ResponseWriter, r *http.Req
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdatePost(w, r, id)
+	}))
+
+	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
+		handler = siw.HandlerMiddlewares[i](handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListComments operation middleware
+func (siw *ServerInterfaceWrapper) ListComments(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+
+	// ------------- Path parameter "postId" -------------
+	var postId string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "postId", chi.URLParam(r, "postId"), &postId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "postId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCommentsParams
+
+	// ------------- Optional query parameter "offset" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "offset", r.URL.Query(), &params.Offset)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "offset", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", r.URL.Query(), &params.Limit)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListComments(w, r, postId, params)
 	}))
 
 	for i := len(siw.HandlerMiddlewares) - 1; i >= 0; i-- {
@@ -550,6 +636,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 		r.Put(options.BaseURL+"/posts/{id}", wrapper.UpdatePost)
 	})
 	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/posts/{postId}/comments", wrapper.ListComments)
+	})
+	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/posts/{postId}/comments", wrapper.CreateComment)
 	})
 	r.Group(func(r chi.Router) {
@@ -568,21 +657,25 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

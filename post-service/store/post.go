@@ -19,6 +19,6 @@ type Post struct {
 type PostStore interface {
 	SetPost(ctx context.Context, post *Post) error
 	LookupPost(ctx context.Context, ID string) (*Post, error)
-	ListPosts(ctx context.Context) ([]*Post, error)
+	ListPosts(ctx context.Context, offset, limit int) ([]*Post, error)
 	DeletePost(ctx context.Context, ID string) error
 }

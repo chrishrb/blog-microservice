@@ -17,6 +17,6 @@ type Comment struct {
 type CommentStore interface {
 	SetComment(ctx context.Context, comment *Comment) error
 	LookupComment(ctx context.Context, postId, ID string) (*Comment, error)
-	ListCommentsByPostID(ctx context.Context, postID string) ([]*Comment, error)
+	ListCommentsByPostID(ctx context.Context, postID string, offset, limit int) ([]*Comment, error)
 	DeleteComment(ctx context.Context, postID, ID string) error
 }

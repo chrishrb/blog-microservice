@@ -31,15 +31,21 @@ func (s *Store) LookupPost(ctx context.Context, ID string) (*store.Post, error) 
 	return post, nil
 }
 
-func (s *Store) ListPosts(ctx context.Context) ([]*store.Post, error) {
+func (s *Store) ListPosts(ctx context.Context, offset, limit int) ([]*store.Post, error) {
 	s.Lock()
 	defer s.Unlock()
 
-	var posts []*store.Post
+	var result []*store.Post
 	for _, post := range s.posts {
-		posts = append(posts, post)
+		result = append(result, post)
+
+		if len(result) >= limit {
+			break
+		}
 	}
-	return posts, nil
+
+	end := min(offset+limit, len(result))
+	return result[offset:end], nil
 }
 
 func (s *Store) DeletePost(ctx context.Context, ID string) error {

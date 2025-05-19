@@ -107,13 +107,25 @@ func TestListCommentsByPostID(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	comments, err := engine.ListCommentsByPostID(t.Context(), "1")
+	comments, err := engine.ListCommentsByPostID(t.Context(), "1", 0, 100)
 	assert.NoError(t, err)
 	assert.Len(t, comments, 2)
 
-	comments, err = engine.ListCommentsByPostID(t.Context(), "nonexistent")
+	// Test pagination with limit
+	limitedDatapoints, err := engine.ListCommentsByPostID(t.Context(), "1", 0, 1)
+	assert.NoError(t, err)
+	assert.Len(t, limitedDatapoints, 1)
+
+	// Test pagination with offset
+	offsetDatapoints, err := engine.ListCommentsByPostID(t.Context(), "1", 1, 10)
+	assert.NoError(t, err)
+	assert.Len(t, offsetDatapoints, 1)
+
+	// Test nonexistent post
+	comments, err = engine.ListCommentsByPostID(t.Context(), "nonexistent", 0, 100)
 	assert.NoError(t, err)
 	assert.Nil(t, comments)
+
 }
 
 func TestDeleteComment(t *testing.T) {

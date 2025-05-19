@@ -92,7 +92,7 @@ func TestListPosts(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	posts, err := engine.ListPosts(t.Context())
+	posts, err := engine.ListPosts(t.Context(), 0, 100)
 	require.NoError(t, err)
 	assert.Len(t, posts, 2)
 
@@ -102,6 +102,16 @@ func TestListPosts(t *testing.T) {
 	}
 	assert.True(t, ids["1"])
 	assert.True(t, ids["2"])
+
+	// Test pagination with limit
+	limitedDatapoints, err := engine.ListPosts(t.Context(), 0, 1)
+	assert.NoError(t, err)
+	assert.Len(t, limitedDatapoints, 1)
+
+	// Test pagination with offset
+	offsetDatapoints, err := engine.ListPosts(t.Context(), 1, 10)
+	assert.NoError(t, err)
+	assert.Len(t, offsetDatapoints, 1)
 }
 
 func TestDeletePost(t *testing.T) {
