@@ -23,7 +23,7 @@ type BaseConfig struct {
 // read from the YAML file will overlay this configuration.
 var DefaultConfig = BaseConfig{
 	Api: ApiSettingsConfig{
-		Addr:    "localhost:9410",
+		Addr:    "localhost:9411",
 		Host:    "localhost",
 		OrgName: "chrishrb",
 	},

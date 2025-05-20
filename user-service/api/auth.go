@@ -34,7 +34,7 @@ func (s *Server) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var claims []string
+	claims := make([]string, 0)
 	if user.Role == store.RoleAdmin {
 		claims = append(claims, "all-users:read", "all-users:write")
 	}

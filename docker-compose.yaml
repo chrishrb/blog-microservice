@@ -1,0 +1,124 @@
+services:
+  swagger-ui:
+    image: swaggerapi/swagger-ui
+    environment:
+      CONFIG_URL: /config/config.json
+    volumes:
+      - type: bind
+        source: ./config/swagger-ui
+        target: /usr/share/nginx/html/config
+        read_only: true
+    ports:
+      - '8081:8080'
+
+  kafka:
+    image: bitnami/kafka:latest
+    ports:
+      - 9094:9094
+    environment:
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_CONTROLLER_BROKER_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094 #3
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT #4
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_FETCH_MIN_BYTES=1048576
+      - KAFKA_CFG_FETCH_MAX_BYTES=52428800
+      - KAFKA_CFG_MAX_POLL_RECORDS=10000
+    healthcheck:
+      test: kafka-topics.sh --list --bootstrap-server localhost:9092 || exit 1
+      interval: 1s
+      timeout: 60s
+      retries: 60
+
+  kafka-init:
+    image: bitnami/kafka:latest
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command: [ "/bin/bash", "-c", "kafka-topics.sh --create --topic minute-data --partitions 24 --replication-factor 1 --bootstrap-server kafka:9092" ]
+    init: true
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - 8082:8080
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ['--config=/etc/otel-collector-config.yaml']
+    ports:
+      - 4317:4317
+    volumes:
+      - ./config/otel-collector/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    ports:
+      - '6831:6831/udp' # UDP port for Jaeger agent
+      - '16686:16686' # Web UI
+      - '14268:14268' # HTTP port for spans
+      
+  user-service:
+    build:
+      context: .
+      args:
+        BUILD_TARGET: user-service
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command:
+      - "serve"
+      - "-c"
+      - "/config/config.yaml"
+    volumes:
+      - type: bind
+        source: ./config/user-service
+        target: /config
+        read_only: true
+    environment:
+      ENVIRONMENT: "dev"
+    ports:
+      - "9410:9410"
+    healthcheck:
+      test: ["CMD", "/usr/bin/curl", "-s", "--fail", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    user: "${UID}:${GID}"
+
+  post-service:
+    build:
+      context: .
+      args:
+        BUILD_TARGET: post-service
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command:
+      - "serve"
+      - "-c"
+      - "/config/config.yaml"
+    volumes:
+      - type: bind
+        source: ./config/post-service
+        target: /config
+        read_only: true
+    environment:
+      ENVIRONMENT: "dev"
+    ports:
+      - "9411:9411"
+    healthcheck:
+      test: ["CMD", "/usr/bin/curl", "-s", "--fail", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    user: "${UID}:${GID}"

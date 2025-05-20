@@ -1,0 +1,12 @@
+{
+  "urls": [
+    {
+      "url": "http://localhost:9410/user-service/openapi.json",
+      "name": "user-service"
+    },
+    {
+      "url": "http://localhost:9411/post-service/openapi.json",
+      "name": "post-service"
+    }
+  ]
+}

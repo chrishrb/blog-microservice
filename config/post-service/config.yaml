@@ -1,17 +1,12 @@
 api:
   addr: ":9411"
-  host: example.com
-  org_name: "Example"
 transport:
   type: kafka
   kafka:
     urls:
       - localhost:9092
-    group: post-service
 observability:
-  log_format: text
-  otel_collector_addr: localhost:4317
-  tls_keylog_file: /keylog/post-service.log
+  otel_collector_addr: "otel-collector:4317"
 storage:
   type: in_memory
 auth:
@@ -19,4 +14,4 @@ auth:
   audience: blog-microservice
   public_key:
     type: file
-    file: "testdata/jwt.pub.pem"
+    file: "/config/jwt.pub.pem"

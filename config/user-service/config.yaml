@@ -1,0 +1,20 @@
+api:
+  addr: ":9410"
+transport:
+  type: kafka
+  kafka:
+    urls:
+      - localhost:9092
+observability:
+  otel_collector_addr: "otel-collector:4317"
+storage:
+  type: in_memory
+auth:
+  issuer: auth.example.com
+  audience: blog-microservice
+  public_key:
+    type: file
+    file: "/config/jwt.pub.pem"
+  private_key:
+    type: file
+    file: "/config/jwt.key.pem"

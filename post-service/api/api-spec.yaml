@@ -8,6 +8,10 @@ info:
     name: API Support
     email: support@example.com
 
+servers:
+  - url: http://localhost:9411/post-service/v1
+    description: The local development server
+
 tags:
   - name: Posts
     description: Post related endpoints
@@ -50,6 +54,8 @@ paths:
     post:
       summary: Create a new post
       operationId: createPost
+      tags:
+        - Posts
       requestBody:
         required: true
         content:

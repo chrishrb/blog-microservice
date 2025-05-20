@@ -16,7 +16,7 @@ func TestParseConfig(t *testing.T) {
 
 	want := &config.BaseConfig{
 		Api: config.ApiSettingsConfig{
-			Addr:    ":9410",
+			Addr:    ":9411",
 			Host:    "example.com",
 			OrgName: "Example",
 		},

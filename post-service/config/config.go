@@ -190,7 +190,7 @@ func getMsgProducer(cfg *TransportConfig, tracer oteltrace.Tracer) (transport.Pr
 func getJWSVerifier(cfg *AuthConfig) (auth.JWSVerifier, error) {
 	publicKeySource, err := getLocalSource(cfg.PublicKeySource)
 	if err != nil {
-		return nil, fmt.Errorf("create private key source: %w", err)
+		return nil, fmt.Errorf("create public key source: %w", err)
 	}
 
 	return auth.NewLocalJWSVerifier(publicKeySource, cfg.Issuer, cfg.Audience)
