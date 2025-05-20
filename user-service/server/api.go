@@ -20,8 +20,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func NewApiHandler(settings config.ApiSettings, engine store.Engine, authService auth.AuthService) http.Handler {
-	apiServer, err := api.NewServer(engine, clock.RealClock{}, authService)
+func NewApiHandler(settings config.ApiSettings, engine store.Engine, JWSVerifier auth.JWSVerifier, JWSSigner auth.JWSSigner) http.Handler {
+	apiServer, err := api.NewServer(engine, clock.RealClock{}, JWSSigner)
 	if err != nil {
 		panic(err)
 	}
@@ -52,7 +52,7 @@ func NewApiHandler(settings config.ApiSettings, engine store.Engine, authService
 
 	validator := oapimiddleware.OapiRequestValidatorWithOptions(swagger, &oapimiddleware.Options{
 		Options: openapi3filter.Options{
-			AuthenticationFunc: auth.NewAuthenticator(authService),
+			AuthenticationFunc: auth.NewAuthenticator(JWSVerifier),
 		},
 	})
 

@@ -162,13 +162,13 @@ func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request, ID openapi_t
 }
 
 func (s *Server) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(auth.UserIDContextKey)
-	if userID == nil {
-		_ = render.Render(w, r, api_utils.ErrInternalError(errors.New("userID not found in context")))
+	userID, err := auth.GetUserIDFromContext(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
 	}
 
-	user, err := s.engine.LookupUser(r.Context(), userID.(uuid.UUID))
+	user, err := s.engine.LookupUser(r.Context(), userID)
 	if err != nil || user == nil {
 		_ = render.Render(w, r, api_utils.ErrInternalError(errors.New("user lookup error")))
 		return
@@ -185,13 +185,13 @@ func (s *Server) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) UpdateCurrentUser(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(auth.UserIDContextKey)
-	if userID == nil {
-		_ = render.Render(w, r, api_utils.ErrInternalError(errors.New("userID not found in context")))
+	userID, err := auth.GetUserIDFromContext(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
 	}
 
-	user, err := s.engine.LookupUser(r.Context(), userID.(uuid.UUID))
+	user, err := s.engine.LookupUser(r.Context(), userID)
 	if err != nil || user == nil {
 		_ = render.Render(w, r, api_utils.ErrInternalError(errors.New("user lookup error")))
 		return

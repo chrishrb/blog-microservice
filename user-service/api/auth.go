@@ -39,7 +39,7 @@ func (s *Server) LoginUser(w http.ResponseWriter, r *http.Request) {
 		claims = append(claims, "all-users:read", "all-users:write")
 	}
 
-	token, expiresIn, err := s.authService.CreateJWSWithClaims(user.ID, claims)
+	token, err := s.JWSSigner.CreateJWS(user.ID, claims)
 	if err != nil {
 		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
@@ -47,7 +47,7 @@ func (s *Server) LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	render.Render(w, r, &AuthResponse{
 		AccessToken: token,
-		ExpiresIn:   expiresIn,
+		ExpiresIn:   int(s.JWSSigner.GetExpiresIn().Seconds()),
 	})
 }
 

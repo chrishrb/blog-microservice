@@ -14,3 +14,12 @@ observability:
   tls_keylog_file: /keylog/user-service.log
 storage:
   type: in_memory
+auth:
+  issuer: auth.example.com
+  audience: blog-microservice
+  public_key:
+    type: file
+    file: "testdata/jwt.pub.pem"
+  private_key:
+    type: file
+    file: "testdata/jwt.key.pem"

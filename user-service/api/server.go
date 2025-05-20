@@ -8,22 +8,22 @@ import (
 )
 
 type Server struct {
-	engine      store.Engine
-	clock       clock.PassiveClock
-	openapi     *openapi3.T
-	authService auth.AuthService
+	engine    store.Engine
+	clock     clock.PassiveClock
+	openapi   *openapi3.T
+	JWSSigner auth.JWSSigner
 }
 
-func NewServer(engine store.Engine, clock clock.PassiveClock, authService auth.AuthService) (*Server, error) {
+func NewServer(engine store.Engine, clock clock.PassiveClock, JWSSigner auth.JWSSigner) (*Server, error) {
 	swagger, err := GetSwagger()
 	if err != nil {
 		return nil, err
 	}
 
 	return &Server{
-		engine:      engine,
-		clock:       clock,
-		openapi:     swagger,
-		authService: authService,
+		engine:    engine,
+		clock:     clock,
+		openapi:   swagger,
+		JWSSigner: JWSSigner,
 	}, nil
 }
