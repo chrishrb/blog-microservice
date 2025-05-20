@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/chrishrb/blog-microservice/post-service/store"
+	"github.com/google/uuid"
 )
 
 func (s *Store) SetComment(ctx context.Context, comment *store.Comment) error {
@@ -22,13 +23,13 @@ func (s *Store) SetComment(ctx context.Context, comment *store.Comment) error {
 
 	// Store the comment
 	if _, ok := s.comments[comment.PostID]; !ok {
-		s.comments[comment.PostID] = make(map[string]*store.Comment)
+		s.comments[comment.PostID] = make(map[uuid.UUID]*store.Comment)
 	}
 	s.comments[comment.PostID][comment.ID] = comment
 	return nil
 }
 
-func (s *Store) LookupComment(ctx context.Context, postID, ID string) (*store.Comment, error) {
+func (s *Store) LookupComment(ctx context.Context, postID, ID uuid.UUID) (*store.Comment, error) {
 	s.Lock()
 	defer s.Unlock()
 
@@ -39,7 +40,7 @@ func (s *Store) LookupComment(ctx context.Context, postID, ID string) (*store.Co
 	return comment, nil
 }
 
-func (s *Store) ListCommentsByPostID(ctx context.Context, postID string, offset, limit int) ([]*store.Comment, error) {
+func (s *Store) ListCommentsByPostID(ctx context.Context, postID uuid.UUID, offset, limit int) ([]*store.Comment, error) {
 	s.Lock()
 	defer s.Unlock()
 
@@ -65,7 +66,7 @@ func (s *Store) ListCommentsByPostID(ctx context.Context, postID string, offset,
 	return comments[offset:end], nil
 }
 
-func (s *Store) DeleteComment(ctx context.Context, postID, ID string) error {
+func (s *Store) DeleteComment(ctx context.Context, postID, ID uuid.UUID) error {
 	s.Lock()
 	defer s.Unlock()
 
@@ -73,6 +74,6 @@ func (s *Store) DeleteComment(ctx context.Context, postID, ID string) error {
 		return nil
 	}
 
-	delete(s.comments, ID)
+	delete(s.comments[postID], ID)
 	return nil
 }

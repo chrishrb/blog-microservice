@@ -27,6 +27,7 @@ func TestConfigure(t *testing.T) {
 	assert.NotNil(t, settings.TracerProvider)
 	assert.NotNil(t, settings.Storage)
 	assert.NotNil(t, settings.MsgProducer)
+	assert.NotNil(t, settings.JWSVerifier)
 }
 
 func TestConfigureInMemoryStorage(t *testing.T) {

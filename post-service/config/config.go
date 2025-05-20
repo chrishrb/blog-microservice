@@ -8,6 +8,8 @@ import (
 
 	"log/slog"
 
+	"github.com/chrishrb/blog-microservice/internal/auth"
+	"github.com/chrishrb/blog-microservice/internal/source"
 	"github.com/chrishrb/blog-microservice/internal/transport"
 	"github.com/chrishrb/blog-microservice/internal/transport/kafka"
 	"github.com/chrishrb/blog-microservice/post-service/store"
@@ -39,6 +41,7 @@ type Config struct {
 	TracerProvider *trace.TracerProvider
 	Storage        store.Engine
 	MsgProducer    transport.Producer
+	JWSVerifier    auth.JWSVerifier
 }
 
 func Configure(ctx context.Context, cfg *BaseConfig) (c *Config, err error) {
@@ -81,10 +84,15 @@ func Configure(ctx context.Context, cfg *BaseConfig) (c *Config, err error) {
 		return nil, err
 	}
 
+	c.JWSVerifier, err = getJWSVerifier(&cfg.Auth)
+	if err != nil {
+		return nil, err
+	}
+
 	return
 }
 
-func getStorage(ctx context.Context, cfg *StorageConfig) (engine store.Engine, err error) {
+func getStorage(_ context.Context, cfg *StorageConfig) (engine store.Engine, err error) {
 	switch cfg.Type {
 	case "in_memory":
 		engine = inmemory.NewStore(clock.RealClock{})
@@ -177,4 +185,26 @@ func getMsgProducer(cfg *TransportConfig, tracer oteltrace.Tracer) (transport.Pr
 	default:
 		return nil, fmt.Errorf("unknown transport type: %s", cfg.Type)
 	}
+}
+
+func getJWSVerifier(cfg *AuthConfig) (auth.JWSVerifier, error) {
+	publicKeySource, err := getLocalSource(cfg.PublicKeySource)
+	if err != nil {
+		return nil, fmt.Errorf("create private key source: %w", err)
+	}
+
+	return auth.NewLocalJWSVerifier(publicKeySource, cfg.Issuer, cfg.Audience)
+}
+
+func getLocalSource(cfg *LocalSourceConfig) (src source.SourceProvider, err error) {
+	switch cfg.Type {
+	case "file":
+		src = source.FileSourceProvider{
+			FileName: cfg.File,
+		}
+	default:
+		return nil, fmt.Errorf("unknown local source type: %s", cfg.Type)
+	}
+
+	return src, nil
 }

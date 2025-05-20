@@ -3,22 +3,30 @@ package api
 import (
 	"net/http"
 
+	"github.com/chrishrb/blog-microservice/internal/api_utils"
+	"github.com/chrishrb/blog-microservice/internal/auth"
 	"github.com/chrishrb/blog-microservice/post-service/store"
 	"github.com/go-chi/render"
 	"github.com/google/uuid"
 )
 
 func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
-	req := new(PostCreate)
-	if err := render.Bind(r, req); err != nil {
-		_ = render.Render(w, r, ErrInvalidRequest(err))
+	userID, err := auth.GetUserIDFromContext(r.Context())
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
 	}
 
-	ID := uuid.New().String()
+	req := new(PostCreate)
+	if err := render.Bind(r, req); err != nil {
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(err))
+		return
+	}
+
+	ID := uuid.New()
 	post := &store.Post{
 		ID:       ID,
-		AuthorID: req.AuthorId,
+		AuthorID: userID,
 		Title:    req.Title,
 		Content:  req.Content,
 	}
@@ -30,9 +38,9 @@ func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
 	} else {
 		post.Published = false
 	}
-	err := s.engine.SetPost(r.Context(), post)
+	err = s.engine.SetPost(r.Context(), post)
 	if err != nil {
-		_ = render.Render(w, r, ErrInternalError(err))
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
 	}
 
@@ -47,23 +55,23 @@ func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-func (s *Server) DeletePost(w http.ResponseWriter, r *http.Request, id string) {
+func (s *Server) DeletePost(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
 	err := s.engine.DeletePost(r.Context(), id)
 	if err != nil {
-		_ = render.Render(w, r, ErrInternalError(err))
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *Server) LookupPost(w http.ResponseWriter, r *http.Request, id string) {
+func (s *Server) LookupPost(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
 	post, err := s.engine.LookupPost(r.Context(), id)
 	if err != nil {
-		_ = render.Render(w, r, ErrInternalError(err))
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
 	}
 	if post == nil {
-		_ = render.Render(w, r, ErrNotFound)
+		_ = render.Render(w, r, api_utils.ErrNotFound)
 		return
 	}
 
@@ -77,28 +85,25 @@ func (s *Server) LookupPost(w http.ResponseWriter, r *http.Request, id string) {
 	})
 }
 
-func (s *Server) UpdatePost(w http.ResponseWriter, r *http.Request, id string) {
+func (s *Server) UpdatePost(w http.ResponseWriter, r *http.Request, id uuid.UUID) {
 	// Check if the post exists
 	post, err := s.engine.LookupPost(r.Context(), id)
 	if err != nil {
-		_ = render.Render(w, r, ErrInternalError(err))
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
 	}
 	if post == nil {
-		_ = render.Render(w, r, ErrNotFound)
+		_ = render.Render(w, r, api_utils.ErrNotFound)
 		return
 	}
 
 	// Afterwards update the post
 	req := new(PostUpdate)
 	if err := render.Bind(r, req); err != nil {
-		_ = render.Render(w, r, ErrInvalidRequest(err))
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(err))
 		return
 	}
 
-	if req.AuthorId != nil {
-		post.AuthorID = *req.AuthorId
-	}
 	if req.Title != nil {
 		post.Title = *req.Title
 	}
@@ -114,7 +119,7 @@ func (s *Server) UpdatePost(w http.ResponseWriter, r *http.Request, id string) {
 
 	err = s.engine.SetPost(r.Context(), post)
 	if err != nil {
-		_ = render.Render(w, r, ErrInternalError(err))
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
 	}
 
@@ -129,11 +134,11 @@ func (s *Server) UpdatePost(w http.ResponseWriter, r *http.Request, id string) {
 }
 
 func (s *Server) ListPosts(w http.ResponseWriter, r *http.Request, params ListPostsParams) {
-	offset, limit := getPaginationWithDefaults(params.Offset, params.Limit)
+	offset, limit := api_utils.GetPaginationWithDefaults(params.Offset, params.Limit)
 
 	posts, err := s.engine.ListPosts(r.Context(), offset, limit)
 	if err != nil {
-		_ = render.Render(w, r, ErrInternalError(err))
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
 	}
 

@@ -6,6 +6,7 @@ import (
 
 	"github.com/chrishrb/blog-microservice/post-service/store"
 	"github.com/chrishrb/blog-microservice/post-service/store/inmemory"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	clock_testing "k8s.io/utils/clock/testing"
@@ -15,9 +16,12 @@ func TestSetPost(t *testing.T) {
 	fakeClock := clock_testing.NewFakeClock(time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC))
 	engine := inmemory.NewStore(fakeClock)
 
+	ID := uuid.New()
+	authorID := uuid.New()
+
 	err := engine.SetPost(t.Context(), &store.Post{
-		ID:        "1",
-		AuthorID:  "someAuthorID",
+		ID:        ID,
+		AuthorID:  authorID,
 		Title:     "Some Title",
 		Content:   "Some Content",
 		Tags:      []string{"tag1", "tag2"},
@@ -25,10 +29,10 @@ func TestSetPost(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	post, err := engine.LookupPost(t.Context(), "1")
+	post, err := engine.LookupPost(t.Context(), ID)
 	require.NoError(t, err)
-	assert.Equal(t, "1", post.ID)
-	assert.Equal(t, "someAuthorID", post.AuthorID)
+	assert.Equal(t, ID, post.ID)
+	assert.Equal(t, authorID, post.AuthorID)
 	assert.Equal(t, "Some Title", post.Title)
 	assert.Equal(t, "Some Content", post.Content)
 	assert.Equal(t, []string{"tag1", "tag2"}, post.Tags)
@@ -41,9 +45,12 @@ func TestLookupPost(t *testing.T) {
 	fakeClock := clock_testing.NewFakeClock(time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC))
 	engine := inmemory.NewStore(fakeClock)
 
+	ID := uuid.New()
+	authorID := uuid.New()
+
 	post := &store.Post{
-		ID:        "1",
-		AuthorID:  "someAuthorID",
+		ID:        ID,
+		AuthorID:  authorID,
 		Title:     "Some Title",
 		Content:   "Some Content",
 		Tags:      []string{"tag1", "tag2"},
@@ -52,7 +59,7 @@ func TestLookupPost(t *testing.T) {
 	err := engine.SetPost(t.Context(), post)
 	require.NoError(t, err)
 
-	result, err := engine.LookupPost(t.Context(), "1")
+	result, err := engine.LookupPost(t.Context(), ID)
 	require.NoError(t, err)
 	assert.Equal(t, post.ID, result.ID)
 	assert.Equal(t, post.AuthorID, result.AuthorID)
@@ -63,7 +70,7 @@ func TestLookupPost(t *testing.T) {
 	assert.Equal(t, fakeClock.Now(), result.CreatedAt)
 	assert.Equal(t, fakeClock.Now(), result.UpdatedAt)
 
-	result, err = engine.LookupPost(t.Context(), "nonexistent")
+	result, err = engine.LookupPost(t.Context(), uuid.New())
 	assert.NoError(t, err)
 	assert.Nil(t, result)
 }
@@ -72,9 +79,11 @@ func TestListPosts(t *testing.T) {
 	fakeClock := clock_testing.NewFakeClock(time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC))
 	engine := inmemory.NewStore(fakeClock)
 
+	ID1 := uuid.New()
+	authorID1 := uuid.New()
 	err := engine.SetPost(t.Context(), &store.Post{
-		ID:        "1",
-		AuthorID:  "author1",
+		ID:        ID1,
+		AuthorID:  authorID1,
 		Title:     "Title 1",
 		Content:   "Content 1",
 		Tags:      []string{"tag1"},
@@ -82,9 +91,11 @@ func TestListPosts(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	ID2 := uuid.New()
+	authorID2 := uuid.New()
 	err = engine.SetPost(t.Context(), &store.Post{
-		ID:        "2",
-		AuthorID:  "author2",
+		ID:        ID2,
+		AuthorID:  authorID2,
 		Title:     "Title 2",
 		Content:   "Content 2",
 		Tags:      []string{"tag2"},
@@ -96,12 +107,12 @@ func TestListPosts(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, posts, 2)
 
-	ids := map[string]bool{
+	ids := map[uuid.UUID]bool{
 		posts[0].ID: true,
 		posts[1].ID: true,
 	}
-	assert.True(t, ids["1"])
-	assert.True(t, ids["2"])
+	assert.True(t, ids[ID1])
+	assert.True(t, ids[ID2])
 
 	// Test pagination with limit
 	limitedDatapoints, err := engine.ListPosts(t.Context(), 0, 1)
@@ -118,26 +129,29 @@ func TestDeletePost(t *testing.T) {
 	fakeClock := clock_testing.NewFakeClock(time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC))
 	engine := inmemory.NewStore(fakeClock)
 
+	ID := uuid.New()
+	authorID := uuid.New()
+
 	post := &store.Post{
-		ID:       "1",
-		AuthorID: "someAuthorID",
+		ID:       ID,
+		AuthorID: authorID,
 		Title:    "Some Title",
 		Content:  "Some Content",
 	}
 	err := engine.SetPost(t.Context(), post)
 	require.NoError(t, err)
 
-	_, err = engine.LookupPost(t.Context(), "1")
+	_, err = engine.LookupPost(t.Context(), ID)
 	require.NoError(t, err)
 
-	err = engine.DeletePost(t.Context(), "1")
+	err = engine.DeletePost(t.Context(), ID)
 	require.NoError(t, err)
 
-	result, err := engine.LookupPost(t.Context(), "1")
+	result, err := engine.LookupPost(t.Context(), ID)
 	assert.NoError(t, err)
 	assert.Nil(t, result)
 
-	err = engine.DeletePost(t.Context(), "nonexistent")
+	err = engine.DeletePost(t.Context(), uuid.New())
 	assert.NoError(t, err)
 	assert.Nil(t, result)
 }

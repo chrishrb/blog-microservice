@@ -75,6 +75,7 @@ paths:
         required: true
         schema:
           type: string
+          format: uuid
     get:
       summary: Get a post by ID
       description: Retrieve a specific post by its ID
@@ -138,6 +139,7 @@ paths:
         required: true
         schema:
           type: string
+          format: uuid
     get:
       summary: List all comments for a post
       description: Retrieve a list of all comments for a specific post
@@ -200,11 +202,13 @@ paths:
         required: true
         schema:
           type: string
+          format: uuid
       - name: id
         in: path
         required: true
         schema:
           type: string
+          format: uuid
     get:
       summary: Get a comment by ID
       description: Retrieve a specific comment by its ID
@@ -268,19 +272,27 @@ components:
       properties:
         id:
           type: string
+          format: uuid
+          description: Unique identifier for the post
         authorId:
           type: string
+          format: uuid
+          description: Unique identifier for the author
         title:
           type: string
+          description: Title of the post
         content:
           type: string
+          description: Content of the post
         tags:
           type: array
           items:
             type: string
+          description: Tags associated with the post
         published:
           type: boolean
           default: false
+          description: Indicates if the post is published
       required:
         - id
         - authorId
@@ -290,49 +302,57 @@ components:
     PostCreate:
       type: object
       properties:
-        authorId:
-          type: string
         title:
           type: string
+          description: Title of the post
         content:
           type: string
+          description: Content of the post
         tags:
           type: array
           items:
             type: string
+          description: Tags associated with the post
         published:
           type: boolean
           default: false
+          description: Indicates if the post is published
       required:
-        - authorId
         - title
         - content
     PostUpdate:
       type: object
       properties:
-        authorId:
-          type: string
         title:
           type: string
+          description: Title of the post
         content:
           type: string
+          description: Content of the post
         tags:
           type: array
           items:
             type: string
+          description: Tags associated with the post
         published:
           type: boolean
           default: false
+          description: Indicates if the post is published
     
     Comment:
       type: object
       properties:
         id:
           type: string
+          format: uuid
+          description: Unique identifier for the comment
         authorId:
           type: string
+          format: uuid
+          description: Unique identifier for the author
         content:
           type: string
+          description: Content of the comment
       required:
         - id
         - authorId
@@ -340,20 +360,17 @@ components:
     CommentCreate:
       type: object
       properties:
-        authorId:
-          type: string
         content:
           type: string
+          description: Content of the comment
       required:
-        - authorId
         - content
     CommentUpdate:
       type: object
       properties:
-        authorId:
-          type: string
         content:
           type: string
+          description: Content of the comment
 
     Error:
       type: object

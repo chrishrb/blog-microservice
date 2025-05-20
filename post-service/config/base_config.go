@@ -16,6 +16,7 @@ type BaseConfig struct {
 	Transport     TransportConfig             `mapstructure:"transport" json:"transport" validate:"required"`
 	Observability ObservabilitySettingsConfig `mapstructure:"observability" json:"observability" validate:"required"`
 	Storage       StorageConfig               `mapstructure:"storage" json:"storage" validate:"required"`
+	Auth          AuthConfig                  `mapstructure:"auth" json:"auth" validate:"required"`
 }
 
 // DefaultConfig provides the default configuration. The configuration
@@ -39,6 +40,14 @@ var DefaultConfig = BaseConfig{
 	},
 	Storage: StorageConfig{
 		Type: "in_memory",
+	},
+	Auth: AuthConfig{
+		Issuer:   "auth.example.com",
+		Audience: "blog-microservice",
+		PublicKeySource: &LocalSourceConfig{
+			Type: "file",
+			File: "testdata/jwt.pub.pem",
+		},
 	},
 }
 

@@ -16,25 +16,31 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // Comment defines model for Comment.
 type Comment struct {
-	AuthorId string `json:"authorId"`
-	Content  string `json:"content"`
-	Id       string `json:"id"`
+	// AuthorId Unique identifier for the author
+	AuthorId openapi_types.UUID `json:"authorId"`
+
+	// Content Content of the comment
+	Content string `json:"content"`
+
+	// Id Unique identifier for the comment
+	Id openapi_types.UUID `json:"id"`
 }
 
 // CommentCreate defines model for CommentCreate.
 type CommentCreate struct {
-	AuthorId string `json:"authorId"`
-	Content  string `json:"content"`
+	// Content Content of the comment
+	Content string `json:"content"`
 }
 
 // CommentUpdate defines model for CommentUpdate.
 type CommentUpdate struct {
-	AuthorId *string `json:"authorId,omitempty"`
-	Content  *string `json:"content,omitempty"`
+	// Content Content of the comment
+	Content *string `json:"content,omitempty"`
 }
 
 // Error defines model for Error.
@@ -46,30 +52,53 @@ type Error struct {
 
 // Post defines model for Post.
 type Post struct {
-	AuthorId  string    `json:"authorId"`
-	Content   string    `json:"content"`
-	Id        string    `json:"id"`
-	Published bool      `json:"published"`
-	Tags      *[]string `json:"tags,omitempty"`
-	Title     string    `json:"title"`
+	// AuthorId Unique identifier for the author
+	AuthorId openapi_types.UUID `json:"authorId"`
+
+	// Content Content of the post
+	Content string `json:"content"`
+
+	// Id Unique identifier for the post
+	Id openapi_types.UUID `json:"id"`
+
+	// Published Indicates if the post is published
+	Published bool `json:"published"`
+
+	// Tags Tags associated with the post
+	Tags *[]string `json:"tags,omitempty"`
+
+	// Title Title of the post
+	Title string `json:"title"`
 }
 
 // PostCreate defines model for PostCreate.
 type PostCreate struct {
-	AuthorId  string    `json:"authorId"`
-	Content   string    `json:"content"`
-	Published *bool     `json:"published,omitempty"`
-	Tags      *[]string `json:"tags,omitempty"`
-	Title     string    `json:"title"`
+	// Content Content of the post
+	Content string `json:"content"`
+
+	// Published Indicates if the post is published
+	Published *bool `json:"published,omitempty"`
+
+	// Tags Tags associated with the post
+	Tags *[]string `json:"tags,omitempty"`
+
+	// Title Title of the post
+	Title string `json:"title"`
 }
 
 // PostUpdate defines model for PostUpdate.
 type PostUpdate struct {
-	AuthorId  *string   `json:"authorId,omitempty"`
-	Content   *string   `json:"content,omitempty"`
-	Published *bool     `json:"published,omitempty"`
-	Tags      *[]string `json:"tags,omitempty"`
-	Title     *string   `json:"title,omitempty"`
+	// Content Content of the post
+	Content *string `json:"content,omitempty"`
+
+	// Published Indicates if the post is published
+	Published *bool `json:"published,omitempty"`
+
+	// Tags Tags associated with the post
+	Tags *[]string `json:"tags,omitempty"`
+
+	// Title Title of the post
+	Title *string `json:"title,omitempty"`
 }
 
 // BadRequest defines model for BadRequest.
@@ -115,28 +144,28 @@ type ServerInterface interface {
 	CreatePost(w http.ResponseWriter, r *http.Request)
 	// Delete a post
 	// (DELETE /posts/{id})
-	DeletePost(w http.ResponseWriter, r *http.Request, id string)
+	DeletePost(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
 	// Get a post by ID
 	// (GET /posts/{id})
-	LookupPost(w http.ResponseWriter, r *http.Request, id string)
+	LookupPost(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
 	// Update a post
 	// (PUT /posts/{id})
-	UpdatePost(w http.ResponseWriter, r *http.Request, id string)
+	UpdatePost(w http.ResponseWriter, r *http.Request, id openapi_types.UUID)
 	// List all comments for a post
 	// (GET /posts/{postId}/comments)
-	ListComments(w http.ResponseWriter, r *http.Request, postId string, params ListCommentsParams)
+	ListComments(w http.ResponseWriter, r *http.Request, postId openapi_types.UUID, params ListCommentsParams)
 	// Create a new comment
 	// (POST /posts/{postId}/comments)
-	CreateComment(w http.ResponseWriter, r *http.Request, postId string)
+	CreateComment(w http.ResponseWriter, r *http.Request, postId openapi_types.UUID)
 	// Delete a comment
 	// (DELETE /posts/{postId}/comments/{id})
-	DeleteComment(w http.ResponseWriter, r *http.Request, postId string, id string)
+	DeleteComment(w http.ResponseWriter, r *http.Request, postId openapi_types.UUID, id openapi_types.UUID)
 	// Get a comment by ID
 	// (GET /posts/{postId}/comments/{id})
-	LookupComment(w http.ResponseWriter, r *http.Request, postId string, id string)
+	LookupComment(w http.ResponseWriter, r *http.Request, postId openapi_types.UUID, id openapi_types.UUID)
 	// Update a comment
 	// (PUT /posts/{postId}/comments/{id})
-	UpdateComment(w http.ResponseWriter, r *http.Request, postId string, id string)
+	UpdateComment(w http.ResponseWriter, r *http.Request, postId openapi_types.UUID, id openapi_types.UUID)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
@@ -157,49 +186,49 @@ func (_ Unimplemented) CreatePost(w http.ResponseWriter, r *http.Request) {
 
 // Delete a post
 // (DELETE /posts/{id})
-func (_ Unimplemented) DeletePost(w http.ResponseWriter, r *http.Request, id string) {
+func (_ Unimplemented) DeletePost(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get a post by ID
 // (GET /posts/{id})
-func (_ Unimplemented) LookupPost(w http.ResponseWriter, r *http.Request, id string) {
+func (_ Unimplemented) LookupPost(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Update a post
 // (PUT /posts/{id})
-func (_ Unimplemented) UpdatePost(w http.ResponseWriter, r *http.Request, id string) {
+func (_ Unimplemented) UpdatePost(w http.ResponseWriter, r *http.Request, id openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // List all comments for a post
 // (GET /posts/{postId}/comments)
-func (_ Unimplemented) ListComments(w http.ResponseWriter, r *http.Request, postId string, params ListCommentsParams) {
+func (_ Unimplemented) ListComments(w http.ResponseWriter, r *http.Request, postId openapi_types.UUID, params ListCommentsParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Create a new comment
 // (POST /posts/{postId}/comments)
-func (_ Unimplemented) CreateComment(w http.ResponseWriter, r *http.Request, postId string) {
+func (_ Unimplemented) CreateComment(w http.ResponseWriter, r *http.Request, postId openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Delete a comment
 // (DELETE /posts/{postId}/comments/{id})
-func (_ Unimplemented) DeleteComment(w http.ResponseWriter, r *http.Request, postId string, id string) {
+func (_ Unimplemented) DeleteComment(w http.ResponseWriter, r *http.Request, postId openapi_types.UUID, id openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Get a comment by ID
 // (GET /posts/{postId}/comments/{id})
-func (_ Unimplemented) LookupComment(w http.ResponseWriter, r *http.Request, postId string, id string) {
+func (_ Unimplemented) LookupComment(w http.ResponseWriter, r *http.Request, postId openapi_types.UUID, id openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
 // Update a comment
 // (PUT /posts/{postId}/comments/{id})
-func (_ Unimplemented) UpdateComment(w http.ResponseWriter, r *http.Request, postId string, id string) {
+func (_ Unimplemented) UpdateComment(w http.ResponseWriter, r *http.Request, postId openapi_types.UUID, id openapi_types.UUID) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -267,7 +296,7 @@ func (siw *ServerInterfaceWrapper) DeletePost(w http.ResponseWriter, r *http.Req
 	var err error
 
 	// ------------- Path parameter "id" -------------
-	var id string
+	var id openapi_types.UUID
 
 	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -292,7 +321,7 @@ func (siw *ServerInterfaceWrapper) LookupPost(w http.ResponseWriter, r *http.Req
 	var err error
 
 	// ------------- Path parameter "id" -------------
-	var id string
+	var id openapi_types.UUID
 
 	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -317,7 +346,7 @@ func (siw *ServerInterfaceWrapper) UpdatePost(w http.ResponseWriter, r *http.Req
 	var err error
 
 	// ------------- Path parameter "id" -------------
-	var id string
+	var id openapi_types.UUID
 
 	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -342,7 +371,7 @@ func (siw *ServerInterfaceWrapper) ListComments(w http.ResponseWriter, r *http.R
 	var err error
 
 	// ------------- Path parameter "postId" -------------
-	var postId string
+	var postId openapi_types.UUID
 
 	err = runtime.BindStyledParameterWithOptions("simple", "postId", chi.URLParam(r, "postId"), &postId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -386,7 +415,7 @@ func (siw *ServerInterfaceWrapper) CreateComment(w http.ResponseWriter, r *http.
 	var err error
 
 	// ------------- Path parameter "postId" -------------
-	var postId string
+	var postId openapi_types.UUID
 
 	err = runtime.BindStyledParameterWithOptions("simple", "postId", chi.URLParam(r, "postId"), &postId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -411,7 +440,7 @@ func (siw *ServerInterfaceWrapper) DeleteComment(w http.ResponseWriter, r *http.
 	var err error
 
 	// ------------- Path parameter "postId" -------------
-	var postId string
+	var postId openapi_types.UUID
 
 	err = runtime.BindStyledParameterWithOptions("simple", "postId", chi.URLParam(r, "postId"), &postId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -420,7 +449,7 @@ func (siw *ServerInterfaceWrapper) DeleteComment(w http.ResponseWriter, r *http.
 	}
 
 	// ------------- Path parameter "id" -------------
-	var id string
+	var id openapi_types.UUID
 
 	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -445,7 +474,7 @@ func (siw *ServerInterfaceWrapper) LookupComment(w http.ResponseWriter, r *http.
 	var err error
 
 	// ------------- Path parameter "postId" -------------
-	var postId string
+	var postId openapi_types.UUID
 
 	err = runtime.BindStyledParameterWithOptions("simple", "postId", chi.URLParam(r, "postId"), &postId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -454,7 +483,7 @@ func (siw *ServerInterfaceWrapper) LookupComment(w http.ResponseWriter, r *http.
 	}
 
 	// ------------- Path parameter "id" -------------
-	var id string
+	var id openapi_types.UUID
 
 	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -479,7 +508,7 @@ func (siw *ServerInterfaceWrapper) UpdateComment(w http.ResponseWriter, r *http.
 	var err error
 
 	// ------------- Path parameter "postId" -------------
-	var postId string
+	var postId openapi_types.UUID
 
 	err = runtime.BindStyledParameterWithOptions("simple", "postId", chi.URLParam(r, "postId"), &postId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -488,7 +517,7 @@ func (siw *ServerInterfaceWrapper) UpdateComment(w http.ResponseWriter, r *http.
 	}
 
 	// ------------- Path parameter "id" -------------
-	var id string
+	var id openapi_types.UUID
 
 	err = runtime.BindStyledParameterWithOptions("simple", "id", chi.URLParam(r, "id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
 	if err != nil {
@@ -657,25 +686,27 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"H4sIAAAAAAAC/+xYT2/jthP9KgR/v6MQO9n04lN3vW1hICiCbPcU5MBII3u2EsmQVDZGoO9ekJQoyaL/",
+	"pEmcoMjJsijOjN48Pj7qkaailIIDN5rOHqkCLQXX4P58YdkV3FWgjf2XCm6Au0smZYEpMyj45IcW3N7T",
+	"6QpKZq/+ryCnM/q/SRd64kf15DelhKJ1XSc0A50qlDYIndlcRDXJ6oQuuAHFWfEN1D0oP+vVa2iTEu2y",
+	"EvAPJvRPYX4XFc9ev4Qr0KJSKRAuDMldTvtQM8+GnYuybPJLJSQog75brDIroRauyGHQ7xzvKiCYATeY",
+	"IyiSC0XMCoifQxOaC1UyQ2e0qjCjCTVrCXRGtVHIlxaC3msPg8/9ABG5i5g25UVC4JNK6wLtqa1OqCUO",
+	"Ksjo7Jq6RwIWXeE3YaK4/QGpY1mD5VwBMzBG9NnvvFHaAaV8l9mrlTLKGZbVMBe0t0cd1IaZSu8YmovM",
+	"FR9ahtx8OuuqQW5gCWqETG92yBJD6VLod8t8aWt7Nu2bKHurktVtgXoFTfCcVYWhs5wVGsayllmVAk2w",
+	"q5SgJl2MkOBWiAIYtxkMW+px5X+xpSZMa5EiM5CRn2hW/cLRQBlnSHODKcXW7j+aAiIJ7O3dmO5Z8T5w",
+	"17g+WNtI9VwJ2Nb8jzaFNm22ZVsrniuBH604RP3tLeS5aJFlqUMWSoaFnVhJKZT5FR5YKQs4SUVJE8pZ",
+	"aWN8vlyQb/4BOnIwdtCKWck4WyJfkttCLF1ZmjCetTuUDgt15rpOrNPDFMjnywVN6D0o7eOdnkxPpjaN",
+	"kMCZRDqjn9ythEpmVg65iQtvr5YQIcgVGIVwD4SRArUjCisKXxN1gZUzcXYHoReozWUzIpliJRhQms6u",
+	"HynaYHcVqHWHhchzDRbxzvgFbk0TWiLHsird9XgPjIcssMQtEc9sSPbgQ55O+wlOIwlukqGhP5tOn2Rh",
+	"AzV3eVm3J4/YOra2Fw30ngqq6UlGdJWmoHVeFYVj+S++yFjK8DKT2PnAGeWqLJlat+n6bfar85r65t5Y",
+	"RWjcxJAAfiu49OuoOZJ8Edn6xcx/b7+phyJpVAX1qGenL5o51hq3AFNX0rgf54f0o3dUfLkWepAIIxx+",
+	"emGz436xTx4xq/3aKMBEVPGru08Y0RJSzDH1In67Jmg0WXwdLXw/IfR90ILzcXyHmU8ew+x8PwDhVPly",
+	"iIWXbreBEef3CeShaF0I8Xcl42hNj0PY7RLyVvD/AabB3iLnUIuoTmRTsTtZtwE4QztUhf5usO88fGO9",
+	"TqTL3lgRxgk8oDZ2b25oMmytf+6VBbBxeQcJ4JH4VLmSXkQA34qAbYu3rf+efNqfRVZPgh97ontq5zmz",
+	"t6EbUVM174zfh686wFe1H/qeYK1CT47nrjZosMG70PPDhM9z8tni19i6jVNi30w0VR/EXT9xHj6svYYi",
+	"Dj9EHtkVBqKNidUMvXdv2PvqOSbeDs37FyayZc4+H9nnyz4r2aL8bt3kTnyf4Cn3g+dt5Vbwpsck/Xv1",
+	"lz0UBxbz+GKbvLF97XgZc7BHkey38bEHsPe/5GZ363v48nr9GD8mFg4I4JkU6A1ow1Rviy2NoxjqXXND",
+	"BfVN/U8AAAD//0HWHy5GHwAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

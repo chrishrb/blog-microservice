@@ -36,6 +36,14 @@ func TestParseConfig(t *testing.T) {
 		Storage: config.StorageConfig{
 			Type: "in_memory",
 		},
+		Auth: config.AuthConfig{
+			Issuer:   "auth.example.com",
+			Audience: "blog-microservice",
+			PublicKeySource: &config.LocalSourceConfig{
+				Type: "file",
+				File: "testdata/jwt.pub.pem",
+			},
+		},
 	}
 
 	assert.Equal(t, want, cfg)

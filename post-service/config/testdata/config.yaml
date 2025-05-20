@@ -12,5 +12,12 @@ observability:
   log_format: text
   otel_collector_addr: localhost:4317
   tls_keylog_file: /keylog/post-service.log
+auth:
+  issuer: auth.example.com
+  audience: blog-microservice
+  public_key_source:
+    type: file
+    file: "jwt.pub.pem"
+
 storage:
   type: in_memory

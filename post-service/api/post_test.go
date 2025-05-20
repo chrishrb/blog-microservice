@@ -2,15 +2,18 @@ package api_test
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/chrishrb/blog-microservice/internal/auth"
 	"github.com/chrishrb/blog-microservice/internal/testutil"
 	"github.com/chrishrb/blog-microservice/post-service/api"
 	"github.com/chrishrb/blog-microservice/post-service/store"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,8 +22,9 @@ func TestCreatePost(t *testing.T) {
 	server, r, engine, _ := setupServer(t)
 	defer server.Close()
 
+	userID := uuid.New()
+
 	d := api.PostCreate{
-		AuthorId:  "someAuthorId",
 		Title:     "someTitle",
 		Content:   "someContent",
 		Published: testutil.Ptr(true),
@@ -35,6 +39,7 @@ func TestCreatePost(t *testing.T) {
 		bytes.NewBuffer(jsonData),
 	)
 	req.Header.Set("content-type", "application/json")
+	req = req.WithContext(context.WithValue(req.Context(), auth.UserIDContextKey, userID))
 	rr := httptest.NewRecorder()
 	r.ServeHTTP(rr, req)
 
@@ -45,7 +50,7 @@ func TestCreatePost(t *testing.T) {
 
 	// Check the response
 	assert.NotEmpty(t, res.Id)
-	assert.Equal(t, "someAuthorId", res.AuthorId)
+	assert.Equal(t, userID, res.AuthorId)
 	assert.Equal(t, "someTitle", res.Title)
 	assert.Equal(t, "someContent", res.Content)
 	assert.Equal(t, testutil.Ptr([]string{"tag1", "tag2"}), res.Tags)
@@ -55,7 +60,7 @@ func TestCreatePost(t *testing.T) {
 	dbPost, err := engine.LookupPost(req.Context(), res.Id)
 	require.NoError(t, err)
 	assert.Equal(t, res.Id, dbPost.ID)
-	assert.Equal(t, "someAuthorId", dbPost.AuthorID)
+	assert.Equal(t, userID, dbPost.AuthorID)
 	assert.Equal(t, "someTitle", dbPost.Title)
 	assert.Equal(t, "someContent", dbPost.Content)
 	assert.Equal(t, []string{"tag1", "tag2"}, dbPost.Tags)
@@ -66,10 +71,13 @@ func TestDeletePost(t *testing.T) {
 	server, r, engine, _ := setupServer(t)
 	defer server.Close()
 
+	userID := uuid.New()
+
 	// Create a post first
+	ID := uuid.New()
 	post := &store.Post{
-		ID:        "someId",
-		AuthorID:  "someAuthorId",
+		ID:        ID,
+		AuthorID:  userID,
 		Title:     "someTitle",
 		Content:   "someContent",
 		Tags:      []string{"tag1", "tag2"},
@@ -84,6 +92,7 @@ func TestDeletePost(t *testing.T) {
 		fmt.Sprintf("/posts/%s", post.ID),
 		nil,
 	)
+	req = req.WithContext(context.WithValue(req.Context(), auth.UserIDContextKey, userID))
 	rr := httptest.NewRecorder()
 	r.ServeHTTP(rr, req)
 
@@ -99,10 +108,13 @@ func TestLookupPost(t *testing.T) {
 	server, r, engine, _ := setupServer(t)
 	defer server.Close()
 
+	ID := uuid.New()
+	userID := uuid.New()
+
 	// Create a post first
 	post := &store.Post{
-		ID:        "someId",
-		AuthorID:  "someAuthorId",
+		ID:        ID,
+		AuthorID:  userID,
 		Title:     "someTitle",
 		Content:   "someContent",
 		Tags:      []string{"tag1", "tag2"},
@@ -117,6 +129,7 @@ func TestLookupPost(t *testing.T) {
 		fmt.Sprintf("/posts/%s", post.ID),
 		nil,
 	)
+	req = req.WithContext(context.WithValue(req.Context(), auth.UserIDContextKey, userID))
 	rr := httptest.NewRecorder()
 	r.ServeHTTP(rr, req)
 
@@ -127,7 +140,7 @@ func TestLookupPost(t *testing.T) {
 
 	// Check the response
 	assert.Equal(t, post.ID, res.Id)
-	assert.Equal(t, "someAuthorId", res.AuthorId)
+	assert.Equal(t, userID, res.AuthorId)
 	assert.Equal(t, "someTitle", res.Title)
 	assert.Equal(t, "someContent", res.Content)
 	assert.Equal(t, testutil.Ptr([]string{"tag1", "tag2"}), res.Tags)
@@ -141,7 +154,7 @@ func TestLookupPost_NotFound(t *testing.T) {
 	// Lookup a non-existent post
 	req := httptest.NewRequest(
 		http.MethodGet,
-		"/posts/nonexistent-id",
+		fmt.Sprintf("/posts/%s", uuid.New()),
 		nil,
 	)
 	rr := httptest.NewRecorder()
@@ -154,10 +167,13 @@ func TestUpdatePost(t *testing.T) {
 	server, r, engine, _ := setupServer(t)
 	defer server.Close()
 
+	ID := uuid.New()
+	userID := uuid.New()
+
 	// Create a post first
 	post := &store.Post{
-		ID:        "someId",
-		AuthorID:  "someAuthorId",
+		ID:        ID,
+		AuthorID:  userID,
 		Title:     "someTitle",
 		Content:   "someContent",
 		Tags:      []string{"tag1", "tag2"},
@@ -168,7 +184,6 @@ func TestUpdatePost(t *testing.T) {
 
 	// Update the post
 	d := api.PostUpdate{
-		AuthorId:  testutil.Ptr("updatedAuthorId"),
 		Title:     testutil.Ptr("Updated Title"),
 		Content:   testutil.Ptr("Updated Content"),
 		Published: testutil.Ptr(true),
@@ -183,6 +198,7 @@ func TestUpdatePost(t *testing.T) {
 		bytes.NewBuffer(jsonData),
 	)
 	req.Header.Set("content-type", "application/json")
+	req = req.WithContext(context.WithValue(req.Context(), auth.UserIDContextKey, userID))
 	rr := httptest.NewRecorder()
 	r.ServeHTTP(rr, req)
 
@@ -193,7 +209,6 @@ func TestUpdatePost(t *testing.T) {
 
 	// Check the response
 	assert.Equal(t, post.ID, res.Id)
-	assert.Equal(t, "updatedAuthorId", res.AuthorId)
 	assert.Equal(t, "Updated Title", res.Title)
 	assert.Equal(t, "Updated Content", res.Content)
 	assert.Equal(t, testutil.Ptr([]string{"updated", "tags"}), res.Tags)
@@ -203,7 +218,6 @@ func TestUpdatePost(t *testing.T) {
 	dbPost, err := engine.LookupPost(req.Context(), res.Id)
 	require.NoError(t, err)
 	assert.Equal(t, res.Id, dbPost.ID)
-	assert.Equal(t, "updatedAuthorId", dbPost.AuthorID)
 	assert.Equal(t, "Updated Title", dbPost.Title)
 	assert.Equal(t, "Updated Content", dbPost.Content)
 	assert.Equal(t, []string{"updated", "tags"}, dbPost.Tags)
@@ -222,10 +236,11 @@ func TestUpdatePost_NotFound(t *testing.T) {
 
 	req := httptest.NewRequest(
 		http.MethodPut,
-		"/posts/nonexistent-id",
+		fmt.Sprintf("/posts/%s", uuid.New()),
 		bytes.NewBuffer(jsonData),
 	)
 	req.Header.Set("content-type", "application/json")
+	req = req.WithContext(context.WithValue(req.Context(), auth.UserIDContextKey, uuid.New()))
 	rr := httptest.NewRecorder()
 	r.ServeHTTP(rr, req)
 
@@ -236,10 +251,13 @@ func TestListPosts(t *testing.T) {
 	server, r, engine, _ := setupServer(t)
 	defer server.Close()
 
+	userID := uuid.New()
+
 	// Create multiple posts
+	ID1 := uuid.New()
 	post1 := &store.Post{
-		ID:        "someId",
-		AuthorID:  "someAuthorId",
+		ID:        ID1,
+		AuthorID:  userID,
 		Title:     "someTitle",
 		Content:   "someContent",
 		Tags:      []string{"tag1", "tag2"},
@@ -248,9 +266,10 @@ func TestListPosts(t *testing.T) {
 	err := engine.SetPost(t.Context(), post1)
 	require.NoError(t, err)
 
+	ID2 := uuid.New()
 	post2 := &store.Post{
-		ID:        "anotherId",
-		AuthorID:  "anotherAuthorId",
+		ID:        ID2,
+		AuthorID:  userID,
 		Title:     "anotherTitle",
 		Content:   "anotherContent",
 		Tags:      []string{"tag2", "tag3"},
@@ -276,7 +295,7 @@ func TestListPosts(t *testing.T) {
 	require.Equal(t, len(resList), 2)
 
 	// Check that our created posts exist in the response
-	var ids []string
+	var ids []uuid.UUID
 	for _, post := range resList {
 		ids = append(ids, post.Id)
 	}

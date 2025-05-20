@@ -16,7 +16,7 @@ import (
 )
 
 func TestHealthHandler(t *testing.T) {
-	handler := server.NewApiHandler(config.ApiSettings{}, inmemory.NewStore(clock.RealClock{}))
+	handler := server.NewApiHandler(config.ApiSettings{}, inmemory.NewStore(clock.RealClock{}), nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()
@@ -35,7 +35,7 @@ func TestHealthHandler(t *testing.T) {
 }
 
 func TestMetricsHandler(t *testing.T) {
-	handler := server.NewApiHandler(config.ApiSettings{}, inmemory.NewStore(clock.RealClock{}))
+	handler := server.NewApiHandler(config.ApiSettings{}, inmemory.NewStore(clock.RealClock{}), nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
 	w := httptest.NewRecorder()
@@ -59,7 +59,7 @@ func TestMetricsHandler(t *testing.T) {
 }
 
 func TestSwaggerHandler(t *testing.T) {
-	handler := server.NewApiHandler(config.ApiSettings{}, inmemory.NewStore(clock.RealClock{}))
+	handler := server.NewApiHandler(config.ApiSettings{}, inmemory.NewStore(clock.RealClock{}), nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/post-service/openapi.json", nil)
 	w := httptest.NewRecorder()

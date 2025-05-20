@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/chrishrb/blog-microservice/post-service/store"
+	"github.com/google/uuid"
 )
 
 func (s *Store) SetPost(ctx context.Context, post *store.Post) error {
@@ -20,7 +21,7 @@ func (s *Store) SetPost(ctx context.Context, post *store.Post) error {
 	return nil
 }
 
-func (s *Store) LookupPost(ctx context.Context, ID string) (*store.Post, error) {
+func (s *Store) LookupPost(ctx context.Context, ID uuid.UUID) (*store.Post, error) {
 	s.Lock()
 	defer s.Unlock()
 
@@ -48,7 +49,7 @@ func (s *Store) ListPosts(ctx context.Context, offset, limit int) ([]*store.Post
 	return posts[offset:end], nil
 }
 
-func (s *Store) DeletePost(ctx context.Context, ID string) error {
+func (s *Store) DeletePost(ctx context.Context, ID uuid.UUID) error {
 	s.Lock()
 	defer s.Unlock()
 
