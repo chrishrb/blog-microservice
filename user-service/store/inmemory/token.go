@@ -48,7 +48,6 @@ func (s *Store) SetTokenRevoked(ctx context.Context, userID uuid.UUID) error {
 	s.Lock()
 	defer s.Unlock()
 
-
 	for k, v := range s.tokens {
 		if v.UserID == userID {
 			s.tokens[k].UpdatedAt = s.clock.Now()
@@ -57,4 +56,16 @@ func (s *Store) SetTokenRevoked(ctx context.Context, userID uuid.UUID) error {
 	}
 
 	return nil
+}
+
+func (s *Store) ListTokens(ctx context.Context, userID uuid.UUID) ([]*store.Token, error) {
+	s.Lock()
+	defer s.Unlock()
+
+	result := make([]*store.Token, 0)
+	for _, v := range s.tokens {
+		result = append(result, v)
+	}
+
+	return result, nil
 }

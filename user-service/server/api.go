@@ -8,7 +8,7 @@ import (
 	"github.com/chrishrb/blog-microservice/user-service/api"
 	"github.com/chrishrb/blog-microservice/user-service/config"
 	"github.com/chrishrb/blog-microservice/user-service/store"
-	"github.com/induzo/gocom/http/middleware/writablecontext"
+	"github.com/chrishrb/blog-microservice/user-service/writeablecontext"
 	"github.com/riandyrn/otelchi"
 	"github.com/rs/cors"
 	"github.com/unrolled/secure"
@@ -49,7 +49,7 @@ func NewApiHandler(settings config.ApiSettings, engine store.Engine, JWSVerifier
 	r.Use(
 		middleware.Recoverer,
 		secureMiddleware.Handler,
-		writablecontext.Middleware, // workaround to inject userID into chi context
+		writeablecontext.Middleware, // workaround to inject userID into chi context
 		otelchi.Middleware("api", otelchi.WithChiRoutes(r)),
 	)
 

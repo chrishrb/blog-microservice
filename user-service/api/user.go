@@ -164,13 +164,13 @@ func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request, ID openapi_t
 func (s *Server) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 	userID, err := auth.GetUserIDFromContext(r.Context())
 	if err != nil {
-		_ = render.Render(w, r, api_utils.ErrInternalError(err))
+		_ = render.Render(w, r, api_utils.ErrUnauthorized)
 		return
 	}
 
 	user, err := s.engine.LookupUser(r.Context(), userID)
 	if err != nil || user == nil {
-		_ = render.Render(w, r, api_utils.ErrInternalError(errors.New("user lookup error")))
+		_ = render.Render(w, r, api_utils.ErrUnauthorized)
 		return
 	}
 
@@ -187,24 +187,15 @@ func (s *Server) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 func (s *Server) UpdateCurrentUser(w http.ResponseWriter, r *http.Request) {
 	userID, err := auth.GetUserIDFromContext(r.Context())
 	if err != nil {
-		_ = render.Render(w, r, api_utils.ErrInternalError(err))
+		_ = render.Render(w, r, api_utils.ErrUnauthorized)
 		return
 	}
 
 	user, err := s.engine.LookupUser(r.Context(), userID)
 	if err != nil || user == nil {
-		_ = render.Render(w, r, api_utils.ErrInternalError(errors.New("user lookup error")))
+		_ = render.Render(w, r, api_utils.ErrUnauthorized)
 		return
 	}
-
-	render.Render(w, r, &User{
-		Id:        user.ID,
-		Email:     openapi_types.Email(user.Email),
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Role:      UserRole(user.Role),
-		Status:    UserStatus(user.Status),
-	})
 
 	// Afterwards update the user
 	req := new(UserUpdateCurrent)
@@ -213,6 +204,7 @@ func (s *Server) UpdateCurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if the current password is correct
 	if ok := service.VerifyPassword(req.CurrentPassword, user.PasswordHash); !ok {
 		_ = render.Render(w, r, api_utils.ErrInvalidRequest(errors.New("current password is incorrect")))
 		return

@@ -111,3 +111,36 @@ func TestSetTokenRevoked(t *testing.T) {
 	require.NoError(t, err)
 	assert.True(t, isRevoked)
 }
+
+func TestListTokens(t *testing.T) {
+	fakeClock := clock_testing.NewFakeClock(time.Date(2023, 1, 1, 12, 0, 0, 0, time.UTC))
+	engine := inmemory.NewStore(fakeClock)
+
+	userID := uuid.New()
+	ttl, err := time.ParseDuration("5m")
+	require.NoError(t, err)
+
+	tokens, err := engine.ListTokens(t.Context(), userID)
+	require.NoError(t, err)
+	assert.Empty(t, tokens)
+
+	err = engine.SetToken(t.Context(), &store.Token{
+		Token:   "some-refresh-token",
+		UserID:  userID,
+		TTL:     ttl,
+		Revoked: false,
+	})
+	require.NoError(t, err)
+
+	err = engine.SetToken(t.Context(), &store.Token{
+		Token:   "another-refresh-token",
+		UserID:  userID,
+		TTL:     ttl,
+		Revoked: false,
+	})
+	require.NoError(t, err)
+
+	tokens, err = engine.ListTokens(t.Context(), userID)
+	require.NoError(t, err)
+	assert.Len(t, tokens, 2)
+}
