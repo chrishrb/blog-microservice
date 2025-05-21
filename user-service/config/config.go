@@ -210,12 +210,22 @@ func getJWSSigner(cfg *AuthConfig) (auth.JWSSigner, error) {
 		return nil, fmt.Errorf("create private key source: %w", err)
 	}
 
-	expiresIn, err := time.ParseDuration(cfg.ExpiresIn)
+	accessTokenExpiresIn, err := time.ParseDuration(cfg.AccessTokenExpiresIn)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse expiresIn duration: %w", err)
+		return nil, fmt.Errorf("failed to parse access token expiresIn duration: %w", err)
+	}
+	refreshTokenExpiresIn, err := time.ParseDuration(cfg.RefreshTokenExpiresIn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse refresh token expiresIn duration: %w", err)
 	}
 
-	return auth.NewLocalJWSSigner(privateKeySource, cfg.Issuer, cfg.Audience, expiresIn)
+	return auth.NewLocalJWSSigner(
+		privateKeySource,
+		cfg.Issuer,
+		cfg.Audience,
+		accessTokenExpiresIn,
+		refreshTokenExpiresIn,
+	)
 }
 
 func getLocalSource(cfg *LocalSourceConfig) (src source.SourceProvider, err error) {

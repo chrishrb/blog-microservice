@@ -20,7 +20,7 @@ import (
 )
 
 func NewApiHandler(settings config.ApiSettings, engine store.Engine, JWSVerifier auth.JWSVerifier, JWSSigner auth.JWSSigner) http.Handler {
-	apiServer, err := api.NewServer(engine, clock.RealClock{}, JWSSigner)
+	apiServer, err := api.NewServer(engine, clock.RealClock{}, JWSVerifier, JWSSigner)
 	if err != nil {
 		panic(err)
 	}

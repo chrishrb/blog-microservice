@@ -37,9 +37,10 @@ func TestParseConfig(t *testing.T) {
 			Type: "in_memory",
 		},
 		Auth: config.AuthConfig{
-			Issuer:    "auth.example.com",
-			Audience:  "blog-microservice",
-			ExpiresIn: "1h",
+			Issuer:                "auth.example.com",
+			Audience:              "blog-microservice",
+			AccessTokenExpiresIn:  "5m",
+			RefreshTokenExpiresIn: "24h",
 			PublicKeySource: &config.LocalSourceConfig{
 				Type: "file",
 				File: "testdata/jwt.pub.pem",

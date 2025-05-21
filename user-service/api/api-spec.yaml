@@ -265,6 +265,33 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/ServerError'
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      description: Refreshes the access token using the refresh token
+      tags:
+        - Authentication
+      operationId: refreshToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/ServerError'
   /auth/password-reset:
     post:
       summary: Request password reset
@@ -452,12 +479,25 @@ components:
         accessToken:
           type: string
           description: JWT access token
+        refreshToken:
+          type: string
+          description: JWT refresh token
         expiresIn:
           type: integer
           description: Token expiration time in seconds
       required:
         - accessToken
+        - refreshToken
         - expiresIn
+
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          description: JWT refresh token
+      required:
+        - refreshToken
 
     PasswordResetRequest:
       type: object

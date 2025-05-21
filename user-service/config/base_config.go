@@ -42,9 +42,10 @@ var DefaultConfig = BaseConfig{
 		Type: "in_memory",
 	},
 	Auth: AuthConfig{
-		Issuer:    "auth.example.com",
-		Audience:  "blog-microservice",
-		ExpiresIn: "1h", // TODO:
+		Issuer:                "auth.example.com",
+		Audience:              "blog-microservice",
+		AccessTokenExpiresIn:  "5m",
+		RefreshTokenExpiresIn: "24h",
 		PublicKeySource: &LocalSourceConfig{
 			Type: "file",
 			File: "testdata/jwt.pub.pem",

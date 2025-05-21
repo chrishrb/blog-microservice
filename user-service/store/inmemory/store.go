@@ -14,13 +14,15 @@ import (
 // It is primarily provided to support unit testing.
 type Store struct {
 	sync.Mutex
-	clock clock.PassiveClock
-	users map[uuid.UUID]*store.User
+	clock  clock.PassiveClock
+	users  map[uuid.UUID]*store.User
+	tokens map[string]*store.Token
 }
 
 func NewStore(clock clock.PassiveClock) *Store {
 	return &Store{
-		clock: clock,
-		users: make(map[uuid.UUID]*store.User),
+		clock:  clock,
+		users:  make(map[uuid.UUID]*store.User),
+		tokens: make(map[string]*store.Token),
 	}
 }

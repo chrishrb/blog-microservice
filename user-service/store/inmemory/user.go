@@ -52,10 +52,6 @@ func (s *Store) ListUsers(ctx context.Context, offset, limit int) ([]*store.User
 	var users []*store.User
 	for _, user := range s.users {
 		users = append(users, user)
-
-		if len(users) >= limit {
-			break
-		}
 	}
 
 	end := min(offset+limit, len(users))
