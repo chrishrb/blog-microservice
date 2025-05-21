@@ -17,7 +17,7 @@ func TestConfigure(t *testing.T) {
 	require.NoError(t, err)
 
 	wantApiSettings := config.ApiSettings{
-		Addr:    "localhost:9410",
+		Addr:    "localhost:9411",
 		Host:    "localhost",
 		OrgName: "chrishrb",
 	}

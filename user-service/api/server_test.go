@@ -10,7 +10,7 @@ import (
 	"github.com/chrishrb/blog-microservice/user-service/api"
 	"github.com/chrishrb/blog-microservice/user-service/store"
 	"github.com/chrishrb/blog-microservice/user-service/store/inmemory"
-	"github.com/chrishrb/blog-microservice/user-service/writeablecontext"
+	"github.com/chrishrb/blog-microservice/internal/writeablecontext"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"

@@ -33,6 +33,7 @@ type ApiSettings struct {
 	Addr    string
 	Host    string
 	OrgName string
+	Cors    *CorsConfig
 }
 
 type Config struct {
@@ -55,6 +56,7 @@ func Configure(ctx context.Context, cfg *BaseConfig) (c *Config, err error) {
 			Addr:    cfg.Api.Addr,
 			Host:    cfg.Api.Host,
 			OrgName: cfg.Api.OrgName,
+			Cors:    cfg.Api.Cors,
 		},
 	}
 

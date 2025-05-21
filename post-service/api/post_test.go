@@ -2,14 +2,12 @@ package api_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/chrishrb/blog-microservice/internal/auth"
 	"github.com/chrishrb/blog-microservice/internal/testutil"
 	"github.com/chrishrb/blog-microservice/post-service/api"
 	"github.com/chrishrb/blog-microservice/post-service/store"
@@ -39,7 +37,7 @@ func TestCreatePost(t *testing.T) {
 		bytes.NewBuffer(jsonData),
 	)
 	req.Header.Set("content-type", "application/json")
-	req = req.WithContext(context.WithValue(req.Context(), auth.UserIDContextKey, userID))
+	req = userIDContext(req, userID)
 	rr := httptest.NewRecorder()
 	r.ServeHTTP(rr, req)
 
@@ -92,7 +90,7 @@ func TestDeletePost(t *testing.T) {
 		fmt.Sprintf("/posts/%s", post.ID),
 		nil,
 	)
-	req = req.WithContext(context.WithValue(req.Context(), auth.UserIDContextKey, userID))
+	req = userIDContext(req, userID)
 	rr := httptest.NewRecorder()
 	r.ServeHTTP(rr, req)
 
@@ -129,7 +127,7 @@ func TestLookupPost(t *testing.T) {
 		fmt.Sprintf("/posts/%s", post.ID),
 		nil,
 	)
-	req = req.WithContext(context.WithValue(req.Context(), auth.UserIDContextKey, userID))
+	req = userIDContext(req, userID)
 	rr := httptest.NewRecorder()
 	r.ServeHTTP(rr, req)
 
@@ -198,7 +196,7 @@ func TestUpdatePost(t *testing.T) {
 		bytes.NewBuffer(jsonData),
 	)
 	req.Header.Set("content-type", "application/json")
-	req = req.WithContext(context.WithValue(req.Context(), auth.UserIDContextKey, userID))
+	req = userIDContext(req, userID)
 	rr := httptest.NewRecorder()
 	r.ServeHTTP(rr, req)
 
@@ -240,7 +238,6 @@ func TestUpdatePost_NotFound(t *testing.T) {
 		bytes.NewBuffer(jsonData),
 	)
 	req.Header.Set("content-type", "application/json")
-	req = req.WithContext(context.WithValue(req.Context(), auth.UserIDContextKey, uuid.New()))
 	rr := httptest.NewRecorder()
 	r.ServeHTTP(rr, req)
 

@@ -120,7 +120,7 @@ func TestListPosts(t *testing.T) {
 	assert.Len(t, limitedDatapoints, 1)
 
 	// Test pagination with offset
-	offsetDatapoints, err := engine.ListPosts(t.Context(), 1, 10)
+	offsetDatapoints, err := engine.ListPosts(t.Context(), 1, 1)
 	assert.NoError(t, err)
 	assert.Len(t, offsetDatapoints, 1)
 }

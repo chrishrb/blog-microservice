@@ -39,10 +39,6 @@ func (s *Store) ListPosts(ctx context.Context, offset, limit int) ([]*store.Post
 	var posts []*store.Post
 	for _, post := range s.posts {
 		posts = append(posts, post)
-
-		if len(posts) >= limit {
-			break
-		}
 	}
 
 	end := min(offset+limit, len(posts))

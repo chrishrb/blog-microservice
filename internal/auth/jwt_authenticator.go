@@ -7,10 +7,14 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/chrishrb/blog-microservice/internal/api_utils"
+	"github.com/chrishrb/blog-microservice/internal/writeablecontext"
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/getkin/kin-openapi/openapi3filter"
+	"github.com/go-chi/render"
 	"github.com/google/uuid"
-	"github.com/induzo/gocom/http/middleware/writablecontext"
 	"github.com/lestrrat-go/jwx/jwt"
+	oapimiddleware "github.com/oapi-codegen/nethttp-middleware"
 )
 
 const UserIDContextKey = "userID"
@@ -58,34 +62,69 @@ func Authenticate(v JWSVerifier, ctx context.Context, input *openapi3filter.Auth
 
 	// Set the property on the context so the handler is able to
 	// access the claims data we generate in here.
-	userID, err := getUserIDFromToken(token)
+	userID, err := GetUserIDFromToken(token)
 	if err != nil {
 		return fmt.Errorf("userID not in token: %w", err)
 	}
-	reqstore := writablecontext.FromContext(input.RequestValidationInput.Request.Context())
-	reqstore.Set(UserIDContextKey, userID)
+	reqstore := writeablecontext.FromContext(input.RequestValidationInput.Request.Context())
+	reqstore.Set(UserIDContextKey, userID.String())
 
 	return nil
 }
 
 // GetUserIDFromContext retrieves the user ID from the context.
 func GetUserIDFromContext(ctx context.Context) (uuid.UUID, error) {
-	userIDAny, isValid := writablecontext.FromContext(ctx).Get(UserIDContextKey)
+	userIDAny, isValid := writeablecontext.FromContext(ctx).Get(UserIDContextKey)
 	if !isValid {
 		return uuid.Nil, fmt.Errorf("userID not found in context")
 	}
 
-	userIDs, isValid := userIDAny.(string)
+	userIDStr, isValid := userIDAny.(string)
 	if !isValid {
 		return uuid.Nil, fmt.Errorf("userID is not a string")
 	}
 
-	userID, err := uuid.Parse(userIDs)
+	userID, err := uuid.Parse(userIDStr)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("userID is not a valid UUID: %w", err)
 	}
 
 	return userID, nil
+}
+
+// Get userID from token
+func GetUserIDFromToken(t jwt.Token) (uuid.UUID, error) {
+	userIDAny, found := t.Get(jwt.SubjectKey)
+	if !found {
+		return uuid.Nil, fmt.Errorf("user ID claim not found")
+	}
+	userIDStr, ok := userIDAny.(string)
+	if !ok {
+		return uuid.Nil, fmt.Errorf("user ID claim is not a string")
+	}
+	userID, err := uuid.Parse(userIDStr)
+	if err != nil {
+		return uuid.Nil, fmt.Errorf("userID is not a valid UUID: %w", err)
+	}
+	return userID, nil
+}
+
+// GetAuthMiddleware returns a middleware for validating requests against the
+// OpenAPI spec.
+func GetAuthMiddleware(swagger *openapi3.T, v JWSVerifier) func(next http.Handler) http.Handler {
+	return oapimiddleware.OapiRequestValidatorWithOptions(swagger, &oapimiddleware.Options{
+		Options: openapi3filter.Options{
+			AuthenticationFunc: NewAuthenticator(v),
+		},
+		ErrorHandlerWithOpts: func(ctx context.Context, err error, w http.ResponseWriter, r *http.Request, opts oapimiddleware.ErrorHandlerOpts) {
+			_ = render.Render(w, r, &api_utils.ErrResponse{
+				Err:            err,
+				HTTPStatusCode: opts.StatusCode,
+				StatusText:     http.StatusText(opts.StatusCode),
+				ErrorText:      err.Error(),
+			})
+		},
+	})
 }
 
 // getJWSFromRequest extracts a JWS string from an Authorization: Bearer <jws> header
@@ -133,19 +172,6 @@ func getClaimsFromToken(t jwt.Token) ([]string, error) {
 		}
 	}
 	return claims, nil
-}
-
-// Get userID from token
-func getUserIDFromToken(t jwt.Token) (string, error) {
-	userID, found := t.Get(UserIDClaim)
-	if !found {
-		return "", fmt.Errorf("user ID claim not found")
-	}
-	userIDStr, ok := userID.(string)
-	if !ok {
-		return "", fmt.Errorf("user ID claim is not a string")
-	}
-	return userIDStr, nil
 }
 
 func checkTokenClaims(expectedClaims []string, t jwt.Token) error {

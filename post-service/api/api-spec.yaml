@@ -9,8 +9,8 @@ info:
     email: support@example.com
 
 servers:
-  - url: http://localhost:9411/post-service/v1
-    description: The local development server
+  - url: /post-service/v1
+    description: Post Service API
 
 tags:
   - name: Posts

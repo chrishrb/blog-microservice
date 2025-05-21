@@ -130,7 +130,7 @@ func TestListCommentsByPostID(t *testing.T) {
 	assert.Len(t, limitedDatapoints, 1)
 
 	// Test pagination with offset
-	offsetDatapoints, err := engine.ListCommentsByPostID(t.Context(), postID, 1, 10)
+	offsetDatapoints, err := engine.ListCommentsByPostID(t.Context(), postID, 1, 1)
 	assert.NoError(t, err)
 	assert.Len(t, offsetDatapoints, 1)
 

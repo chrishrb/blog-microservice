@@ -1,5 +1,16 @@
 api:
   addr: ":9410"
+  cors:
+    allowed_origins:
+      - "http://localhost:8081" # swagger ui
+    allowed_methods:
+      - "GET"
+      - "POST"
+      - "PUT"
+      - "DELETE"
+      - "OPTIONS"
+    allowed_headers:
+      - "*"
 transport:
   type: kafka
   kafka:

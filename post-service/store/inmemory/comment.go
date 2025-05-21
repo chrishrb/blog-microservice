@@ -52,10 +52,6 @@ func (s *Store) ListCommentsByPostID(ctx context.Context, postID uuid.UUID, offs
 	var comments []*store.Comment
 	for _, comment := range s.comments[postID] {
 		comments = append(comments, comment)
-
-		if len(comments) >= limit {
-			break
-		}
 	}
 
 	if offset >= len(comments) {

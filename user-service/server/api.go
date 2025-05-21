@@ -8,7 +8,7 @@ import (
 	"github.com/chrishrb/blog-microservice/user-service/api"
 	"github.com/chrishrb/blog-microservice/user-service/config"
 	"github.com/chrishrb/blog-microservice/user-service/store"
-	"github.com/chrishrb/blog-microservice/user-service/writeablecontext"
+	"github.com/chrishrb/blog-microservice/internal/writeablecontext"
 	"github.com/riandyrn/otelchi"
 	"github.com/rs/cors"
 	"github.com/unrolled/secure"
