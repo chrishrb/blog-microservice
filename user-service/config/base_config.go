@@ -42,8 +42,8 @@ var DefaultConfig = BaseConfig{
 		Type: "in_memory",
 	},
 	Auth: AuthConfig{
-		Issuer:   "auth.example.com",
-		Audience: "blog-microservice",
+		Issuer:    "auth.example.com",
+		Audience:  "blog-microservice",
 		ExpiresIn: "1h", // TODO:
 		PublicKeySource: &LocalSourceConfig{
 			Type: "file",

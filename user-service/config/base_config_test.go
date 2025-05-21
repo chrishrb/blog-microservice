@@ -37,8 +37,8 @@ func TestParseConfig(t *testing.T) {
 			Type: "in_memory",
 		},
 		Auth: config.AuthConfig{
-			Issuer:   "auth.example.com",
-			Audience: "blog-microservice",
+			Issuer:    "auth.example.com",
+			Audience:  "blog-microservice",
 			ExpiresIn: "1h",
 			PublicKeySource: &config.LocalSourceConfig{
 				Type: "file",

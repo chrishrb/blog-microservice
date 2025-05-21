@@ -2,6 +2,7 @@ package server_test
 
 import (
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +11,7 @@ import (
 	"github.com/chrishrb/blog-microservice/user-service/config"
 	"github.com/chrishrb/blog-microservice/user-service/server"
 	"github.com/chrishrb/blog-microservice/user-service/store/inmemory"
+	"github.com/lestrrat-go/jwx/jwt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/utils/clock"
@@ -83,4 +85,30 @@ func TestSwaggerHandler(t *testing.T) {
 	err = json.Unmarshal(b, &jsonData)
 	require.NoError(t, err)
 	require.Equal(t, jsonData["info"].(map[string]any)["title"], "User Service API")
+}
+
+type mockJWSVerifier struct{}
+
+func (m *mockJWSVerifier) ValidateJWS(jws string) (jwt.Token, error) {
+	return nil, errors.New("unauthorized")
+}
+
+func TestAuthMiddleware(t *testing.T) {
+	jwsVerifier := &mockJWSVerifier{}
+	handler := server.NewApiHandler(config.ApiSettings{}, inmemory.NewStore(clock.RealClock{}), jwsVerifier, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/user-service/v1/users", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+	res := w.Result()
+	defer func() {
+		err := res.Body.Close()
+		if err != nil {
+			t.Errorf("closing body: %v", err)
+		}
+	}()
+
+	if res.StatusCode != http.StatusUnauthorized {
+		t.Errorf("status code: want %d, got %d", http.StatusOK, res.StatusCode)
+	}
 }

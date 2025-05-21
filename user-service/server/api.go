@@ -1,18 +1,14 @@
 package server
 
 import (
-	"context"
 	"net/http"
 	"os"
 
-	"github.com/chrishrb/blog-microservice/internal/api_utils"
 	"github.com/chrishrb/blog-microservice/internal/auth"
 	"github.com/chrishrb/blog-microservice/user-service/api"
 	"github.com/chrishrb/blog-microservice/user-service/config"
 	"github.com/chrishrb/blog-microservice/user-service/store"
-	"github.com/getkin/kin-openapi/openapi3filter"
 	"github.com/induzo/gocom/http/middleware/writablecontext"
-	oapimiddleware "github.com/oapi-codegen/nethttp-middleware"
 	"github.com/riandyrn/otelchi"
 	"github.com/rs/cors"
 	"github.com/unrolled/secure"
@@ -20,7 +16,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
@@ -47,39 +42,21 @@ func NewApiHandler(settings config.ApiSettings, engine store.Engine, JWSVerifier
 	logger := middleware.RequestLogger(logFormatter{endpoint: "api"})
 	swagger, _ := api.GetSwagger()
 
-	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:8081"}, // Allow Swagger UI origin
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"*"},
-		AllowCredentials: true,
-	})
+	if settings.Cors != nil {
+		r.Use(getCorsConfig(settings.Cors).Handler)
+	}
 
 	r.Use(
 		middleware.Recoverer,
 		secureMiddleware.Handler,
 		writablecontext.Middleware, // workaround to inject userID into chi context
-		c.Handler,
 		otelchi.Middleware("api", otelchi.WithChiRoutes(r)),
 	)
-
-	validator := oapimiddleware.OapiRequestValidatorWithOptions(swagger, &oapimiddleware.Options{
-		Options: openapi3filter.Options{
-			AuthenticationFunc: auth.NewAuthenticator(JWSVerifier),
-		},
-		ErrorHandlerWithOpts: func(ctx context.Context, err error, w http.ResponseWriter, r *http.Request, opts oapimiddleware.ErrorHandlerOpts) {
-			_ = render.Render(w, r, &api_utils.ErrResponse{
-				Err:            err,
-				HTTPStatusCode: opts.StatusCode,
-				StatusText:     http.StatusText(opts.StatusCode),
-				ErrorText:      err.Error(),
-			})
-		},
-	})
 
 	r.Get("/health", health)
 	r.Handle("/metrics", promhttp.Handler())
 	r.Get("/user-service/openapi.json", getApiSwaggerJson)
-	r.With(logger, validator).Mount("/user-service/v1", api.Handler(apiServer))
+	r.With(logger, auth.GetAuthMiddleware(swagger, JWSVerifier)).Mount("/user-service/v1", api.Handler(apiServer))
 	return r
 }
 
@@ -95,6 +72,15 @@ func getApiSwaggerJson(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_, _ = w.Write(json)
+}
+
+func getCorsConfig(cfg *config.CorsConfig) *cors.Cors {
+	return cors.New(cors.Options{
+		AllowedOrigins:   cfg.AllowedOrigins,
+		AllowedMethods:   cfg.AllowedMethods,
+		AllowedHeaders:   cfg.AllowedHeaders,
+		AllowCredentials: true,
+	})
 }
 
 func health(w http.ResponseWriter, r *http.Request) {
