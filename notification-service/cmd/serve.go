@@ -45,7 +45,12 @@ var serveCmd = &cobra.Command{
 		apiServer.Start(errCh)
 
 		// Start all consumers
+		// TODO: refactor this somehow
 		passwordResetConn, err := settings.MsgConsumer.Consume(context.Background(), transport.PasswordResetTopic, settings.PasswordResetHandler)
+		if err != nil {
+			errCh <- err
+		}
+		verifyAccountConn, err := settings.MsgConsumer.Consume(context.Background(), transport.VerifyAccountTopic, settings.VerifyAccountHandler)
 		if err != nil {
 			errCh <- err
 		}
@@ -53,6 +58,10 @@ var serveCmd = &cobra.Command{
 		err = <-errCh
 
 		err = passwordResetConn.Disconnect(context.Background())
+		if err != nil {
+			slog.Warn("disconnecting from consumer", "err", err)
+		}
+		err = verifyAccountConn.Disconnect(context.Background())
 		if err != nil {
 			slog.Warn("disconnecting from consumer", "err", err)
 		}

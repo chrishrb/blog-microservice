@@ -665,3 +665,122 @@ func TestResetPassword_InactiveUser(t *testing.T) {
 	// Verify bad request response
 	assert.Equal(t, http.StatusBadRequest, rr.Result().StatusCode)
 }
+
+func TestVerifyAccount(t *testing.T) {
+	server, r, engine, _, jwsSigner, _ := setupServer(t)
+	defer server.Close()
+
+	userID := uuid.New()
+
+	// Create a pending user
+	err := engine.SetUser(context.Background(), &store.User{
+		ID:           userID,
+		Email:        "pending@example.com",
+		FirstName:    "Jane",
+		LastName:     "Doe",
+		PasswordHash: "hashedpassword",
+		Status:       store.StatusPending,
+		Role:         store.RoleUser,
+	})
+	require.NoError(t, err)
+
+	// Create a verification token
+	verificationToken, _, err := jwsSigner.CreateVerifyAccountToken(userID)
+	require.NoError(t, err)
+
+	// Test account verification
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/auth/verify/"+verificationToken,
+		nil,
+	)
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	// Verify success response
+	assert.Equal(t, http.StatusNoContent, rr.Result().StatusCode)
+
+	// Verify user status was updated
+	user, err := engine.LookupUser(context.Background(), userID)
+	require.NoError(t, err)
+	assert.Equal(t, store.StatusActive, user.Status)
+}
+
+func TestVerifyAccount_InvalidToken(t *testing.T) {
+	server, r, _, _, _, _ := setupServer(t)
+	defer server.Close()
+
+	// Test verification with invalid token
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/auth/verify/invalid-token",
+		nil,
+	)
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	// Verify bad request response
+	assert.Equal(t, http.StatusBadRequest, rr.Result().StatusCode)
+}
+
+func TestVerifyAccount_UserNotFound(t *testing.T) {
+	server, r, _, _, jwsSigner, _ := setupServer(t)
+	defer server.Close()
+
+	// Create a verification token for a non-existent user
+	nonExistentUserID := uuid.New()
+	verificationToken, _, err := jwsSigner.CreateVerifyAccountToken(nonExistentUserID)
+	require.NoError(t, err)
+
+	// Test verification for non-existent user
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/auth/verify/"+verificationToken,
+		nil,
+	)
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	// Verify bad request response
+	assert.Equal(t, http.StatusBadRequest, rr.Result().StatusCode)
+}
+
+func TestVerifyAccount_BannedUser(t *testing.T) {
+	server, r, engine, _, jwsSigner, _ := setupServer(t)
+	defer server.Close()
+
+	userID := uuid.New()
+
+	// Create a banned user
+	err := engine.SetUser(context.Background(), &store.User{
+		ID:           userID,
+		Email:        "banned@example.com",
+		FirstName:    "Banned",
+		LastName:     "User",
+		PasswordHash: "hashedpassword",
+		Status:       store.StatusBanned,
+		Role:         store.RoleUser,
+	})
+	require.NoError(t, err)
+
+	// Create a verification token
+	verificationToken, _, err := jwsSigner.CreateVerifyAccountToken(userID)
+	require.NoError(t, err)
+
+	// Test verification for banned user
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/auth/verify/"+verificationToken,
+		nil,
+	)
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	// Verify bad request response
+	assert.Equal(t, http.StatusBadRequest, rr.Result().StatusCode)
+
+	// Verify user status was not changed
+	user, err := engine.LookupUser(context.Background(), userID)
+	require.NoError(t, err)
+	assert.Equal(t, store.StatusBanned, user.Status)
+}

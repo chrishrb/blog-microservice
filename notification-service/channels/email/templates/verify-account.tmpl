@@ -1,0 +1,16 @@
+{{define "Subject"}}Verify your account{{end}}
+
+{{define "Body"}}
+Hi {{.FirstName}} {{.LastName}},
+
+Thank you for signing up for {{.AppName}}! To complete your registration, please verify your email address.
+
+To verify your account, please click the link below or copy and paste it into your browser:
+
+{{.VerifyLink}}
+
+If you did not create an account with us, you can safely ignore this email.
+
+Thanks,  
+The {{.AppName}} Team
+{{end}}

@@ -51,3 +51,8 @@ var ErrUnauthorized = &ErrResponse{
 	HTTPStatusCode: http.StatusUnauthorized,
 	StatusText:     http.StatusText(http.StatusUnauthorized),
 }
+
+var ErrConflict = &ErrResponse{
+	HTTPStatusCode: http.StatusConflict,
+	StatusText:     http.StatusText(http.StatusConflict),
+}

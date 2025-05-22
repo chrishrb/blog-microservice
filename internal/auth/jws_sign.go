@@ -16,11 +16,13 @@ import (
 const PermissionsClaim = "permissions"
 const TypeClaim = "type"
 const TypePasswordReset = "password_reset"
+const TypeVerifyAccount = "verify_account"
 
 type JWSSigner interface {
 	CreateAccessToken(userID uuid.UUID, claims []string) (string, time.Duration, error)
 	CreateRefreshToken(userID uuid.UUID) (string, time.Duration, error)
 	CreatePasswordResetToken(userID uuid.UUID) (string, time.Duration, error)
+	CreateVerifyAccountToken(userID uuid.UUID) (string, time.Duration, error)
 }
 
 type LocalJWSSigner struct {
@@ -118,15 +120,39 @@ func (s *LocalJWSSigner) CreateRefreshToken(userID uuid.UUID) (string, time.Dura
 	return string(token), s.refreshTokenExpiresIn, nil
 }
 
-// CreateRefreshToken creates a refresh JWS
+// CreatePasswordResetToken creates a refresh JWS
 func (s *LocalJWSSigner) CreatePasswordResetToken(userID uuid.UUID) (string, time.Duration, error) {
 	t := jwt.New()
-	err := t.Set(jwt.SubjectKey, userID.String())
 	expiresIn := time.Duration(15 * time.Minute)
+	err := t.Set(jwt.SubjectKey, userID.String())
 	if err != nil {
 		return "", 0, fmt.Errorf("setting subject: %w", err)
 	}
 	err = t.Set(TypeClaim, TypePasswordReset)
+	if err != nil {
+		return "", 0, fmt.Errorf("setting subject: %w", err)
+	}
+	err = t.Set(jwt.ExpirationKey, time.Now().Add(expiresIn).Unix())
+	if err != nil {
+		return "", 0, fmt.Errorf("setting expiration: %w", err)
+	}
+	token, err := s.signToken(t)
+	if err != nil {
+		return "", 0, err
+	}
+	return string(token), expiresIn, nil
+}
+
+// CreateVerifyAccountToken creates a refresh JWS
+func (s *LocalJWSSigner) CreateVerifyAccountToken(userID uuid.UUID) (string, time.Duration, error) {
+	t := jwt.New()
+	expiresIn := time.Duration(15 * time.Minute)
+
+	err := t.Set(jwt.SubjectKey, userID.String())
+	if err != nil {
+		return "", 0, fmt.Errorf("setting subject: %w", err)
+	}
+	err = t.Set(TypeClaim, TypeVerifyAccount)
 	if err != nil {
 		return "", 0, fmt.Errorf("setting subject: %w", err)
 	}

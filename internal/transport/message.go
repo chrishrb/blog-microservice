@@ -8,7 +8,7 @@ type Message struct {
 }
 
 const PasswordResetTopic = "password-reset"
-const UserCreatedTopic = "user-created"
+const VerifyAccountTopic = "verify-account"
 
 type PasswordResetEvent struct {
 	Recipient string `json:"recipient"`
@@ -18,8 +18,10 @@ type PasswordResetEvent struct {
 	Token     string `json:"token"`
 }
 
-type UserCreatedEvent struct {
-	Email     string `json:"email"`
+type VerifyAccountEvent struct {
+	Recipient string `json:"recipient"`
+	Channel   string `json:"channel,oneof=email"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
 	Token     string `json:"token"`
-	ExpiresIn int    `json:"expires_in"`
 }

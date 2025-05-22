@@ -44,8 +44,8 @@ var DefaultConfig = BaseConfig{
 		Email: EmailSettingsConfig{
 			Host:     "smtp.example.com",
 			Port:     587,
-			Username: "myuser",
-			Password: "mypassword",
+			Username: "",
+			Password: "",
 			FromAddr: "myuser@example.com",
 		},
 	},

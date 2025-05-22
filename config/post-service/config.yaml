@@ -15,7 +15,7 @@ transport:
   type: kafka
   kafka:
     urls:
-      - localhost:9092
+      - kafka:9092
 observability:
   otel_collector_addr: "otel-collector:4317"
 storage:

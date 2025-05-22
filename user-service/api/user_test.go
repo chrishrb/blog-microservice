@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/chrishrb/blog-microservice/internal/testutil"
+	"github.com/chrishrb/blog-microservice/internal/transport"
 	"github.com/chrishrb/blog-microservice/user-service/api"
 	"github.com/chrishrb/blog-microservice/user-service/service"
 	"github.com/chrishrb/blog-microservice/user-service/store"
@@ -19,7 +20,7 @@ import (
 )
 
 func TestCreateUser(t *testing.T) {
-	server, r, engine, _, _, _ := setupServer(t)
+	server, r, engine, _, _, producer := setupServer(t)
 	defer server.Close()
 
 	d := api.UserCreate{
@@ -51,7 +52,7 @@ func TestCreateUser(t *testing.T) {
 	assert.Equal(t, "John", res.FirstName)
 	assert.Equal(t, "Doe", res.LastName)
 	assert.Equal(t, api.UserRoleUser, res.Role)
-	assert.Equal(t, api.UserStatusActive, res.Status)
+	assert.Equal(t, api.UserStatusPending, res.Status)
 
 	// Check the database
 	dbUser, err := engine.LookupUser(req.Context(), res.Id)
@@ -60,7 +61,24 @@ func TestCreateUser(t *testing.T) {
 	assert.Equal(t, "John", dbUser.FirstName)
 	assert.Equal(t, "Doe", dbUser.LastName)
 	assert.Equal(t, store.RoleUser, dbUser.Role)
-	assert.Equal(t, store.StatusActive, dbUser.Status)
+	assert.Equal(t, store.StatusPending, dbUser.Status)
+
+	// Verify event was produced
+	require.NotNil(t, producer.ProducedMessages)
+	assert.Len(t, producer.ProducedMessages, 1)
+	assert.NotEmpty(t, producer.ProducedMessages[0].Message.ID)
+	assert.Equal(t, transport.VerifyAccountTopic, producer.ProducedMessages[0].Topic)
+	assert.NotEmpty(t, producer.ProducedMessages[0].Message.Data)
+
+	// Verify message content
+	var resetEvent transport.VerifyAccountEvent
+	err = json.Unmarshal(producer.ProducedMessages[0].Message.Data, &resetEvent)
+	require.NoError(t, err)
+	assert.Equal(t, "test@example.com", resetEvent.Recipient)
+	assert.Equal(t, "email", resetEvent.Channel)
+	assert.NotEmpty(t, resetEvent.Token)
+	assert.Equal(t, "John", resetEvent.FirstName)
+	assert.Equal(t, "Doe", resetEvent.LastName)
 }
 
 func TestListUsers(t *testing.T) {

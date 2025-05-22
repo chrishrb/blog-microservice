@@ -1,11 +1,14 @@
 package api
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 
 	"github.com/chrishrb/blog-microservice/internal/api_utils"
 	"github.com/chrishrb/blog-microservice/internal/auth"
+	"github.com/chrishrb/blog-microservice/internal/transport"
 	"github.com/chrishrb/blog-microservice/user-service/service"
 	"github.com/chrishrb/blog-microservice/user-service/store"
 	"github.com/go-chi/render"
@@ -27,15 +30,26 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if the email is already in use
+	existingUser, err := s.engine.LookupUserByEmail(r.Context(), string(req.Email))
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
+		return
+	}
+	if existingUser != nil {
+		_ = render.Render(w, r, api_utils.ErrConflict)
+		return
+	}
+
+	// Afterwards create the user
 	user := &store.User{
 		ID:           ID,
 		Email:        string(req.Email),
 		FirstName:    req.FirstName,
 		LastName:     req.LastName,
 		PasswordHash: passwordHash,
-		// TODO: after mail verification set status here to PENDING
-		Status: store.StatusActive,
-		Role:   store.RoleUser,
+		Status:       store.StatusPending,
+		Role:         store.RoleUser,
 	}
 	err = s.engine.SetUser(r.Context(), user)
 	if err != nil {
@@ -43,7 +57,12 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Send mail to verify the email address
+	// Send event to verify the email address
+	err = s.sendVerifyAccountEvent(r.Context(), ID, string(req.Email), req.FirstName, req.LastName)
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
+		return
+	}
 
 	render.Status(r, http.StatusCreated)
 	render.Render(w, r, &User{
@@ -81,7 +100,18 @@ func (s *Server) ListUsers(w http.ResponseWriter, r *http.Request, params ListUs
 }
 
 func (s *Server) DeleteUser(w http.ResponseWriter, r *http.Request, ID openapi_types.UUID) {
-	err := s.engine.DeleteUser(r.Context(), ID)
+	// Check if the user exists
+	existingUser, err := s.engine.LookupUser(r.Context(), ID)
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
+		return
+	}
+	if existingUser == nil {
+		_ = render.Render(w, r, api_utils.ErrNotFound)
+		return
+	}
+
+	err = s.engine.DeleteUser(r.Context(), ID)
 	if err != nil {
 		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
@@ -241,5 +271,26 @@ func (s *Server) UpdateCurrentUser(w http.ResponseWriter, r *http.Request) {
 		LastName:  user.LastName,
 		Role:      UserRole(user.Role),
 		Status:    UserStatus(user.Status),
+	})
+}
+
+func (s *Server) sendVerifyAccountEvent(ctx context.Context, userID uuid.UUID, email, firstName, lastName string) error {
+	token, _, err := s.jwsSigner.CreateVerifyAccountToken(userID)
+	if err != nil {
+		return err
+	}
+	data, err := json.Marshal(transport.VerifyAccountEvent{
+		Recipient: email,
+		Channel:   "email",
+		FirstName: firstName,
+		LastName:  lastName,
+		Token:     token,
+	})
+	if err != nil {
+		return err
+	}
+	return s.producer.Produce(ctx, transport.VerifyAccountTopic, &transport.Message{
+		ID:   uuid.New().String(),
+		Data: data,
 	})
 }

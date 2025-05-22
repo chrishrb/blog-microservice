@@ -31,6 +31,7 @@ func NewConsumer(opts ...Opt[Consumer]) *Consumer {
 		opt(c)
 	}
 	ensureConsumerDefaults(c)
+	// TODO: check if connection can be established
 	return c
 }
 

@@ -251,6 +251,29 @@ paths:
                 $ref: '#/components/schemas/Error'
         '500':
           $ref: '#/components/responses/ServerError'
+
+  /auth/verify/{token}:
+    get:
+      summary: Verify user account
+      description: Verifies a newly created user account using the verification token
+      tags:
+        - Authentication
+      operationId: verifyAccount
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          description: Account verification token
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Account verified successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
   /auth/logout:
     post:
       summary: User logout

@@ -12,6 +12,10 @@ generate: ## Generate
 test: ## Test
 	${GOCMD} test ./...
 
+.PHONY: build
+build: ## Build
+	docker compose build
+
 .PHONY: integration
 integration: ## Run unit and integration tests
 	${GOCMD} test -tags=integration ./...

@@ -183,6 +183,7 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Send event for password reset
 	data, err := json.Marshal(transport.PasswordResetEvent{
 		Recipient: string(req.Email),
 		Channel:   "email",
@@ -245,4 +246,32 @@ func (s *Server) ResetPassword(w http.ResponseWriter, r *http.Request, token str
 		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
 	}
+}
+
+func (s *Server) VerifyAccount(w http.ResponseWriter, r *http.Request, token string) {
+	// Validate the token and user
+	tokenData, err := s.jwsVerifier.ValidateToken(token)
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(InvalidTokenErr))
+		return
+	}
+	userID, err := auth.GetUserIDFromToken(tokenData)
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(InvalidTokenErr))
+		return
+	}
+	user, err := s.engine.LookupUser(r.Context(), userID)
+	if err != nil || user == nil || user.Status == store.StatusBanned {
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(InvalidTokenErr))
+		return
+	}
+
+	// Update the user's status
+	user.Status = store.StatusActive
+	err = s.engine.SetUser(r.Context(), user)
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }

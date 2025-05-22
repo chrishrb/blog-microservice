@@ -13,6 +13,9 @@ import (
 //go:embed templates/password-reset.tmpl
 var passwordResetTemplate string
 
+//go:embed templates/verify-account.tmpl
+var verifyAccountTemplate string
+
 type EmailChannel struct {
 	host     string
 	port     int
@@ -32,36 +35,50 @@ func NewEmailChannel(host string, port int, username, password, from string) (*E
 }
 
 func (e *EmailChannel) SendPasswordReset(ctx context.Context, recipient string, variables channels.PasswordResetVariables) error {
-	t, err := template.New("email").Parse(passwordResetTemplate)
+	subject, body, err := e.parseEmailTemplate(passwordResetTemplate, variables)
 	if err != nil {
 		return err
+	}
+	return e.sendPlainTextEmail(recipient, subject, body)
+}
+
+func (e *EmailChannel) SendVerifyAccount(ctx context.Context, recipient string, variables channels.VerifyAccountVariables) error {
+	subject, body, err := e.parseEmailTemplate(verifyAccountTemplate, variables)
+	if err != nil {
+		return err
+	}
+	return e.sendPlainTextEmail(recipient, subject, body)
+}
+
+func (e *EmailChannel) sendPlainTextEmail(recipient, subject, body string) error {
+	m := gomail.NewMessage()
+	m.SetHeader("From", e.from)
+	m.SetHeader("To", recipient)
+	m.SetHeader("Subject", subject)
+	m.SetBody("text/plain", body)
+	dialer := gomail.NewDialer(e.host, e.port, e.username, e.password)
+	return dialer.DialAndSend(m)
+}
+
+func (e *EmailChannel) parseEmailTemplate(templateStr string, variables any) (string, string, error) {
+	t, err := template.New("email").Parse(templateStr)
+	if err != nil {
+		return "", "", err
 	}
 
 	// Parse subject
 	var subjectTpl bytes.Buffer
 	if err := t.ExecuteTemplate(&subjectTpl, "Subject", variables); err != nil {
-		return err
+		return "", "", err
 	}
 	subject := subjectTpl.String()
 
 	// Parse body
-	var tpl bytes.Buffer
-	if err := t.ExecuteTemplate(&tpl, "Body", variables); err != nil {
-		return err
+	var bodyTpl bytes.Buffer
+	if err := t.ExecuteTemplate(&bodyTpl, "Body", variables); err != nil {
+		return "", "", err
 	}
-	body := tpl.String()
+	body := bodyTpl.String()
 
-	// Create a new message
-	m := gomail.NewMessage()
-
-	// Set email headers
-	m.SetHeader("From", e.from)
-	m.SetHeader("To", recipient)
-	m.SetHeader("Subject", subject)
-
-	// Set email body
-	m.SetBody("text/plain", body)
-
-	dialer := gomail.NewDialer(e.host, e.port, e.username, e.password)
-	return dialer.DialAndSend(m)
+	return subject, body, nil
 }

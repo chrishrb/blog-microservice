@@ -7,13 +7,11 @@ transport:
   type: kafka
   kafka:
     urls:
-      - localhost:9092
+      - kafka:9092
 observability:
   otel_collector_addr: "otel-collector:4317"
 channels:
   email:
-    host: smtp.example.com
-    port: 587
-    username: myuser
-    password: mypassword
-    from_addr: myuser@example.com
+    host: mailpit
+    port: 1025
+    from_addr: user@host

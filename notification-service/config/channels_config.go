@@ -3,8 +3,8 @@ package config
 type EmailSettingsConfig struct {
 	Host     string `mapstructure:"host" json:"host" validate:"required"`
 	Port     int    `mapstructure:"port" json:"port" validate:"required"`
-	Username string `mapstructure:"username" json:"username" validate:"required"`
-	Password string `mapstructure:"password" json:"password" validate:"required"`
+	Username string `mapstructure:"username,omitempty" json:"username,omitempty"`
+	Password string `mapstructure:"password,omitempty" json:"password,omitempty"`
 	FromAddr string `mapstructure:"from_addr" json:"from_addr" validate:"required"`
 }
 

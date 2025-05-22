@@ -12,15 +12,7 @@ import (
 )
 
 func TestSendPasswordReset(t *testing.T) {
-	server := smtpmock.New(smtpmock.ConfigurationAttr{
-		LogToStdout:       true,
-		LogServerActivity: true,
-	})
-
-	err := server.Start()
-	require.NoError(t, err)
-
-	hostAddr, port := "127.0.0.1", server.PortNumber()
+	server, hostAddr, port := setupServer(t)
 
 	c, err := email.NewEmailChannel(hostAddr, port, "", "", "user@example.com")
 	require.NoError(t, err)
@@ -37,4 +29,36 @@ func TestSendPasswordReset(t *testing.T) {
 	require.NoError(t, err)
 	assert.Len(t, messages, 1)
 	assert.Equal(t, "MAIL FROM:<user@example.com>", messages[0].MailfromRequest())
+}
+
+func TestSendVerifyAccount(t *testing.T) {
+	server, hostAddr, port := setupServer(t)
+
+	c, err := email.NewEmailChannel(hostAddr, port, "", "", "user@example.com")
+	require.NoError(t, err)
+
+	err = c.SendVerifyAccount(t.Context(), "john@example.com", channels.VerifyAccountVariables{
+		FirstName:  "John",
+		LastName:   "Doe",
+		VerifyLink: "https://example.com/verify-account?token=123",
+		AppName:    "MyApp",
+	})
+	require.NoError(t, err)
+
+	messages, err := server.WaitForMessages(1, 10*time.Millisecond)
+	require.NoError(t, err)
+	assert.Len(t, messages, 1)
+	assert.Equal(t, "MAIL FROM:<user@example.com>", messages[0].MailfromRequest())
+}
+
+func setupServer(t *testing.T) (*smtpmock.Server, string, int) {
+	server := smtpmock.New(smtpmock.ConfigurationAttr{
+		LogToStdout:       true,
+		LogServerActivity: true,
+	})
+
+	err := server.Start()
+	require.NoError(t, err)
+
+	return server, "127.0.0.1", server.PortNumber()
 }

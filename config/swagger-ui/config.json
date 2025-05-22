@@ -7,10 +7,6 @@
     {
       "url": "http://localhost:9411/post-service/openapi.json",
       "name": "post-service"
-    },
-    {
-      "url": "http://localhost:9412/notification-service/openapi.json",
-      "name": "notification-service"
     }
   ]
 }

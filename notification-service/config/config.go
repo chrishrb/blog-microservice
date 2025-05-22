@@ -32,6 +32,7 @@ type Config struct {
 	MsgProducer          transport.Producer
 	MsgConsumer          transport.Consumer
 	PasswordResetHandler transport.MessageHandler
+	VerifyAccountHandler transport.MessageHandler
 }
 
 func Configure(ctx context.Context, cfg *BaseConfig) (c *Config, err error) {
@@ -69,6 +70,11 @@ func Configure(ctx context.Context, cfg *BaseConfig) (c *Config, err error) {
 	}
 
 	c.PasswordResetHandler, err = getPasswordResetHandler(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	c.VerifyAccountHandler, err = getVerifyAccountHandler(cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -182,6 +188,32 @@ func getMsgConsumer(cfg *TransportSettingsConfig, tracer oteltrace.Tracer) (tran
 }
 
 func getPasswordResetHandler(cfg *BaseConfig) (transport.MessageHandler, error) {
+	emailChannel, err := getEmailChannel(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return channels.NewPasswordResetHandler(
+		cfg.General.OrgName,
+		cfg.General.WebsiteBaseURL,
+		emailChannel,
+	), nil
+}
+
+func getVerifyAccountHandler(cfg *BaseConfig) (transport.MessageHandler, error) {
+	emailChannel, err := getEmailChannel(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return channels.NewVerifyAccountHandler(
+		cfg.General.OrgName,
+		cfg.General.WebsiteBaseURL,
+		emailChannel,
+	), nil
+}
+
+func getEmailChannel(cfg *BaseConfig) (channels.Channel, error) {
 	emailChannel, err := email.NewEmailChannel(
 		cfg.Channels.Email.Host,
 		cfg.Channels.Email.Port,
@@ -192,10 +224,5 @@ func getPasswordResetHandler(cfg *BaseConfig) (transport.MessageHandler, error) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create email channel: %w", err)
 	}
-
-	return channels.NewPasswordResetHandler(
-		cfg.General.OrgName,
-		cfg.General.WebsiteBaseURL,
-		emailChannel,
-	), nil
+	return emailChannel, nil
 }

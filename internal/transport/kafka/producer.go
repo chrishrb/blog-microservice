@@ -30,6 +30,7 @@ func NewProducer(opts ...Opt[Producer]) *Producer {
 		opt(e)
 	}
 	ensureProducerDefaults(e)
+	// TODO: check if connection can be established
 	return e
 }
 
