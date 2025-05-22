@@ -56,6 +56,7 @@ func TestCreateUser(t *testing.T) {
 
 	// Check the database
 	dbUser, err := engine.LookupUser(req.Context(), res.Id)
+	require.NoError(t, err)
 	assert.Equal(t, res.Id, dbUser.ID)
 	assert.Equal(t, "test@example.com", dbUser.Email)
 	assert.Equal(t, "John", dbUser.FirstName)
@@ -283,6 +284,7 @@ func TestUpdateUser(t *testing.T) {
 
 	// Check the database
 	dbUser, err := engine.LookupUser(req.Context(), res.Id)
+	require.NoError(t, err)
 	assert.Equal(t, res.Id, dbUser.ID)
 	assert.Equal(t, "updated@example.com", dbUser.Email)
 	assert.Equal(t, "Updated", dbUser.FirstName)
@@ -409,6 +411,7 @@ func TestUpdateCurrentUser(t *testing.T) {
 
 	// Check the database
 	dbUser, err := engine.LookupUser(req.Context(), res.Id)
+	require.NoError(t, err)
 	assert.Equal(t, res.Id, dbUser.ID)
 	assert.Equal(t, "updated@example.com", dbUser.Email)
 	assert.Equal(t, "John", dbUser.FirstName)

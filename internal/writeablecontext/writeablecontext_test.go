@@ -77,6 +77,7 @@ func TestFromRequest(t *testing.T) {
 					return
 				}
 
+				//nolint:errcheck
 				w.Write([]byte(valS))
 			}
 
@@ -139,6 +140,7 @@ func BenchmarkFromRequest(b *testing.B) {
 			return
 		}
 
+		//nolint:errcheck
 		w.Write([]byte(valS))
 	}
 
@@ -149,9 +151,7 @@ func BenchmarkFromRequest(b *testing.B) {
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		mux.ServeHTTP(rr, req)
 	}
 }

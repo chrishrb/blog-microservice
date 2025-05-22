@@ -176,6 +176,6 @@ func TestDeleteComment(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Nil(t, comment)
 
-	comment, err = engine.LookupComment(t.Context(), postID, uuid.New())
+	_, err = engine.LookupComment(t.Context(), postID, uuid.New())
 	assert.NoError(t, err)
 }

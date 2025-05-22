@@ -57,13 +57,17 @@ var serveCmd = &cobra.Command{
 
 		err = <-errCh
 
-		err = passwordResetConn.Disconnect(context.Background())
-		if err != nil {
-			slog.Warn("disconnecting from consumer", "err", err)
+		if passwordResetConn != nil {
+			err := passwordResetConn.Disconnect(context.Background())
+			if err != nil {
+				slog.Warn("disconnecting from consumer", "err", err)
+			}
 		}
-		err = verifyAccountConn.Disconnect(context.Background())
-		if err != nil {
-			slog.Warn("disconnecting from consumer", "err", err)
+		if verifyAccountConn != nil {
+			err := verifyAccountConn.Disconnect(context.Background())
+			if err != nil {
+				slog.Warn("disconnecting from consumer", "err", err)
+			}
 		}
 
 		return err

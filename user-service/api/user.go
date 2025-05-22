@@ -65,7 +65,7 @@ func (s *Server) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusCreated)
-	render.Render(w, r, &User{
+	_ = render.Render(w, r, &User{
 		Id:        ID,
 		Email:     openapi_types.Email(user.Email),
 		FirstName: user.FirstName,
@@ -96,21 +96,22 @@ func (s *Server) ListUsers(w http.ResponseWriter, r *http.Request, params ListUs
 		}
 	}
 
-	render.RenderList(w, r, res)
+	_ = render.RenderList(w, r, res)
 }
 
 func (s *Server) DeleteUser(w http.ResponseWriter, r *http.Request, ID openapi_types.UUID) {
 	// Check if the user exists
-	existingUser, err := s.engine.LookupUser(r.Context(), ID)
+	user, err := s.engine.LookupUser(r.Context(), ID)
 	if err != nil {
 		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
 	}
-	if existingUser == nil {
+	if user == nil {
 		_ = render.Render(w, r, api_utils.ErrNotFound)
 		return
 	}
 
+	// Afterwards delete the user
 	err = s.engine.DeleteUser(r.Context(), ID)
 	if err != nil {
 		_ = render.Render(w, r, api_utils.ErrInternalError(err))
@@ -130,7 +131,7 @@ func (s *Server) LookupUser(w http.ResponseWriter, r *http.Request, ID openapi_t
 		return
 	}
 
-	render.Render(w, r, &User{
+	_ = render.Render(w, r, &User{
 		Id:        user.ID,
 		Email:     openapi_types.Email(user.Email),
 		FirstName: user.FirstName,
@@ -181,7 +182,7 @@ func (s *Server) UpdateUser(w http.ResponseWriter, r *http.Request, ID openapi_t
 		return
 	}
 
-	render.Render(w, r, &User{
+	_ = render.Render(w, r, &User{
 		Id:        ID,
 		Email:     openapi_types.Email(user.Email),
 		FirstName: user.FirstName,
@@ -204,7 +205,7 @@ func (s *Server) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render.Render(w, r, &User{
+	_ = render.Render(w, r, &User{
 		Id:        user.ID,
 		Email:     openapi_types.Email(user.Email),
 		FirstName: user.FirstName,
@@ -264,7 +265,7 @@ func (s *Server) UpdateCurrentUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render.Render(w, r, &User{
+	_ = render.Render(w, r, &User{
 		Id:        user.ID,
 		Email:     openapi_types.Email(user.Email),
 		FirstName: user.FirstName,

@@ -45,7 +45,7 @@ func (s *Server) CreatePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusCreated)
-	render.Render(w, r, &Post{
+	_ = render.Render(w, r, &Post{
 		Id:        ID,
 		AuthorId:  post.AuthorID,
 		Title:     post.Title,
@@ -75,7 +75,7 @@ func (s *Server) LookupPost(w http.ResponseWriter, r *http.Request, id uuid.UUID
 		return
 	}
 
-	render.Render(w, r, &Post{
+	_ = render.Render(w, r, &Post{
 		Id:        post.ID,
 		AuthorId:  post.AuthorID,
 		Title:     post.Title,
@@ -123,7 +123,7 @@ func (s *Server) UpdatePost(w http.ResponseWriter, r *http.Request, id uuid.UUID
 		return
 	}
 
-	render.Render(w, r, &Post{
+	_ = render.Render(w, r, &Post{
 		Id:        post.ID,
 		AuthorId:  post.AuthorID,
 		Title:     post.Title,
@@ -153,5 +153,5 @@ func (s *Server) ListPosts(w http.ResponseWriter, r *http.Request, params ListPo
 		}
 	}
 
-	render.RenderList(w, r, res)
+	_ = render.RenderList(w, r, res)
 }

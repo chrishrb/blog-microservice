@@ -37,7 +37,7 @@ func (s *Server) CreateComment(w http.ResponseWriter, r *http.Request, postId uu
 	}
 
 	render.Status(r, http.StatusCreated)
-	render.Render(w, r, &Comment{
+	_ = render.Render(w, r, &Comment{
 		Id:       ID,
 		AuthorId: comment.AuthorID,
 		Content:  comment.Content,
@@ -62,7 +62,7 @@ func (s *Server) ListComments(w http.ResponseWriter, r *http.Request, postId uui
 		}
 	}
 
-	render.RenderList(w, r, comments)
+	_ = render.RenderList(w, r, comments)
 }
 
 func (s *Server) LookupComment(w http.ResponseWriter, r *http.Request, postId, id uuid.UUID) {
@@ -76,7 +76,7 @@ func (s *Server) LookupComment(w http.ResponseWriter, r *http.Request, postId, i
 		return
 	}
 
-	render.Render(w, r, &Comment{
+	_ = render.Render(w, r, &Comment{
 		Id:       comment.ID,
 		AuthorId: comment.AuthorID,
 		Content:  comment.Content,
@@ -112,7 +112,7 @@ func (s *Server) UpdateComment(w http.ResponseWriter, r *http.Request, postId, i
 		return
 	}
 
-	render.Render(w, r, &Comment{
+	_ = render.Render(w, r, &Comment{
 		Id:       comment.ID,
 		AuthorId: comment.AuthorID,
 		Content:  comment.Content,

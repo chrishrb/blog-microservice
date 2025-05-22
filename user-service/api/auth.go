@@ -14,7 +14,7 @@ import (
 	"github.com/google/uuid"
 )
 
-var InvalidTokenErr = errors.New("invalid or expired token")
+var ErrInvalidToken = errors.New("invalid or expired token")
 
 func (s *Server) LoginUser(w http.ResponseWriter, r *http.Request) {
 	req := new(LoginRequest)
@@ -69,7 +69,7 @@ func (s *Server) LoginUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render.Render(w, r, &AuthResponse{
+	_ = render.Render(w, r, &AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresIn:    int(accessTokenExpiresIn.Seconds()),
@@ -157,7 +157,7 @@ func (s *Server) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	render.Render(w, r, &AuthResponse{
+	_ = render.Render(w, r, &AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		ExpiresIn:    int(accessTokenExpiresIn.Seconds()),
@@ -173,7 +173,7 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 
 	user, err := s.engine.LookupUserByEmail(r.Context(), string(req.Email))
 	if err != nil || user == nil || user.Status != store.StatusActive {
-		_ = render.Render(w, r, api_utils.ErrInvalidRequest(InvalidTokenErr))
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(ErrInvalidToken))
 		return
 	}
 
@@ -221,17 +221,17 @@ func (s *Server) ResetPassword(w http.ResponseWriter, r *http.Request, token str
 	// Validate the token and user
 	tokenData, err := s.jwsVerifier.ValidateToken(token)
 	if err != nil {
-		_ = render.Render(w, r, api_utils.ErrInvalidRequest(InvalidTokenErr))
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(ErrInvalidToken))
 		return
 	}
 	userID, err := auth.GetUserIDFromToken(tokenData)
 	if err != nil {
-		_ = render.Render(w, r, api_utils.ErrInvalidRequest(InvalidTokenErr))
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(ErrInvalidToken))
 		return
 	}
 	user, err := s.engine.LookupUser(r.Context(), userID)
 	if err != nil || user == nil || user.Status != store.StatusActive {
-		_ = render.Render(w, r, api_utils.ErrInvalidRequest(InvalidTokenErr))
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(ErrInvalidToken))
 		return
 	}
 
@@ -252,17 +252,17 @@ func (s *Server) VerifyAccount(w http.ResponseWriter, r *http.Request, token str
 	// Validate the token and user
 	tokenData, err := s.jwsVerifier.ValidateToken(token)
 	if err != nil {
-		_ = render.Render(w, r, api_utils.ErrInvalidRequest(InvalidTokenErr))
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(ErrInvalidToken))
 		return
 	}
 	userID, err := auth.GetUserIDFromToken(tokenData)
 	if err != nil {
-		_ = render.Render(w, r, api_utils.ErrInvalidRequest(InvalidTokenErr))
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(ErrInvalidToken))
 		return
 	}
 	user, err := s.engine.LookupUser(r.Context(), userID)
 	if err != nil || user == nil || user.Status == store.StatusBanned {
-		_ = render.Render(w, r, api_utils.ErrInvalidRequest(InvalidTokenErr))
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(ErrInvalidToken))
 		return
 	}
 
