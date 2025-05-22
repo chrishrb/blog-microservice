@@ -122,3 +122,31 @@ services:
       timeout: 10s
       retries: 3
     user: "${UID}:${GID}"
+
+  notification-service:
+    build:
+      context: .
+      args:
+        BUILD_TARGET: notification-service
+    depends_on:
+      kafka:
+        condition: service_healthy
+    command:
+      - "serve"
+      - "-c"
+      - "/config/config.yaml"
+    volumes:
+      - type: bind
+        source: ./config/notification-service
+        target: /config
+        read_only: true
+    environment:
+      ENVIRONMENT: "dev"
+    ports:
+      - "9411:9411"
+    healthcheck:
+      test: ["CMD", "/usr/bin/curl", "-s", "--fail", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    user: "${UID}:${GID}"

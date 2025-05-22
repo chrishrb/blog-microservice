@@ -15,6 +15,9 @@ func TestParseConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	want := &config.BaseConfig{
+		Api: config.ApiSettingsConfig{
+			Addr: ":9412",
+		},
 		General: config.GeneralSettingsConfig{
 			OrgName:        "Blog Microservices",
 			WebsiteBaseURL: "https://example.com",

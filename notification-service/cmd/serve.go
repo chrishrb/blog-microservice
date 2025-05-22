@@ -6,6 +6,7 @@ import (
 
 	"github.com/chrishrb/blog-microservice/internal/transport"
 	"github.com/chrishrb/blog-microservice/notification-service/config"
+	"github.com/chrishrb/blog-microservice/notification-service/server"
 	"github.com/spf13/cobra"
 )
 
@@ -38,6 +39,12 @@ var serveCmd = &cobra.Command{
 		}()
 
 		errCh := make(chan error, 1)
+
+		// Start the server
+		apiServer := server.New("api", cfg.Api.Addr, nil, server.NewApiHandler())
+		apiServer.Start(errCh)
+
+		// Start all consumers
 		passwordResetConn, err := settings.MsgConsumer.Consume(context.Background(), transport.PasswordResetTopic, settings.PasswordResetHandler)
 		if err != nil {
 			errCh <- err

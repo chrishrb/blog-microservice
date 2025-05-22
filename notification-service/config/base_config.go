@@ -12,6 +12,7 @@ import (
 // BaseConfig provides the data structures that represent the configuration
 // and provides the ability to load the configuration from a YAML file.
 type BaseConfig struct {
+	Api           ApiSettingsConfig           `mapstructure:"api" json:"api" validate:"required"`
 	General       GeneralSettingsConfig       `mapstructure:"general" json:"general"`
 	Transport     TransportSettingsConfig     `mapstructure:"transport" json:"transport" validate:"required"`
 	Observability ObservabilitySettingsConfig `mapstructure:"observability" json:"observability" validate:"required"`
@@ -21,6 +22,9 @@ type BaseConfig struct {
 // DefaultConfig provides the default configuration. The configuration
 // read from the YAML file will overlay this configuration.
 var DefaultConfig = BaseConfig{
+	Api: ApiSettingsConfig{
+		Addr: "localhost:9412",
+	},
 	General: GeneralSettingsConfig{
 		OrgName:        "Blog Microservice",
 		WebsiteBaseURL: "https://example.com",

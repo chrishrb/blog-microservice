@@ -1,5 +1,9 @@
 package config
 
+type ApiSettingsConfig struct {
+	Addr string `mapstructure:"addr" json:"addr" validate:"required"`
+}
+
 type GeneralSettingsConfig struct {
 	OrgName        string `mapstructure:"org_name,omitempty" json:"org_name,omitempty"`
 	WebsiteBaseURL string `mapstructure:"website_base_url,omitempty" json:"website_base_url,omitempty"`
