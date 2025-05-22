@@ -53,7 +53,7 @@ Services communicate asynchronously via Kafka for event-driven operations and di
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/blog-microservice.git
+git clone https://github.com/chrishrb/blog-microservice.git
 cd blog-microservice
 ```
 
