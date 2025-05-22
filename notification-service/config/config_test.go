@@ -19,4 +19,5 @@ func TestConfigure(t *testing.T) {
 	assert.NotNil(t, settings.TracerProvider)
 	assert.NotNil(t, settings.MsgProducer)
 	assert.NotNil(t, settings.MsgConsumer)
+	assert.NotNil(t, settings.PasswordResetHandler)
 }

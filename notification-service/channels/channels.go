@@ -23,10 +23,9 @@ type Channel interface {
 }
 
 type PasswordResetHandler struct {
-	OrgName        string
-	WebsiteBaseURL string
-
-	emailChannel Channel
+	orgName        string
+	websiteBaseURL string
+	emailChannel   Channel
 }
 
 func (r PasswordResetHandler) Handle(ctx context.Context, msg *transport.Message) {
@@ -48,8 +47,8 @@ func NewPasswordResetHandler(
 	emailChannel Channel,
 ) PasswordResetHandler {
 	return PasswordResetHandler{
-		OrgName:        orgName,
-		WebsiteBaseURL: websiteBaseURL,
+		orgName:        orgName,
+		websiteBaseURL: websiteBaseURL,
 		emailChannel:   emailChannel,
 	}
 }
@@ -64,8 +63,8 @@ func (r PasswordResetHandler) handle(ctx context.Context, msg *transport.Message
 	vars := PasswordResetVariables{
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
-		ResetLink: fmt.Sprintf("%s/reset-password?token=%s", r.WebsiteBaseURL, req.Token),
-		AppName:   r.OrgName,
+		ResetLink: fmt.Sprintf("%s/reset-password?token=%s", r.websiteBaseURL, req.Token),
+		AppName:   r.orgName,
 	}
 
 	switch req.Channel {
