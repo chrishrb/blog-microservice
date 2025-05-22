@@ -10,8 +10,8 @@ import (
 
 	"github.com/chrishrb/blog-microservice/internal/transport"
 	"github.com/chrishrb/blog-microservice/internal/transport/kafka"
-	"github.com/chrishrb/blog-microservice/post-service/store"
-	"github.com/chrishrb/blog-microservice/post-service/store/inmemory"
+	"github.com/chrishrb/blog-microservice/notification-service/channels"
+	"github.com/chrishrb/blog-microservice/notification-service/channels/email"
 	"github.com/subnova/slog-exporter/slogtrace"
 	"go.opentelemetry.io/contrib/detectors/gcp"
 	"go.opentelemetry.io/otel"
@@ -24,21 +24,14 @@ import (
 	oteltrace "go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"k8s.io/utils/clock"
 )
 
-type ApiSettings struct {
-	Addr    string
-	Host    string
-	OrgName string
-}
-
 type Config struct {
-	Api            ApiSettings
-	Tracer         oteltrace.Tracer
-	TracerProvider *trace.TracerProvider
-	Storage        store.Engine
-	MsgProducer    transport.Producer
+	Tracer               oteltrace.Tracer
+	TracerProvider       *trace.TracerProvider
+	MsgProducer          transport.Producer
+	MsgConsumer          transport.Consumer
+	PasswordResetHandler transport.MessageHandler
 }
 
 func Configure(ctx context.Context, cfg *BaseConfig) (c *Config, err error) {
@@ -47,13 +40,7 @@ func Configure(ctx context.Context, cfg *BaseConfig) (c *Config, err error) {
 		return nil, err
 	}
 
-	c = &Config{
-		Api: ApiSettings{
-			Addr:    cfg.Api.Addr,
-			Host:    cfg.Api.Host,
-			OrgName: cfg.Api.OrgName,
-		},
-	}
+	c = &Config{}
 
 	switch cfg.Observability.LogFormat {
 	case "json":
@@ -69,27 +56,21 @@ func Configure(ctx context.Context, cfg *BaseConfig) (c *Config, err error) {
 		return nil, err
 	}
 
-	c.Tracer = c.TracerProvider.Tracer("post-service")
-
-	c.Storage, err = getStorage(ctx, &cfg.Storage)
-	if err != nil {
-		return nil, err
-	}
+	c.Tracer = c.TracerProvider.Tracer("notification-service")
 
 	c.MsgProducer, err = getMsgProducer(&cfg.Transport, c.Tracer)
 	if err != nil {
 		return nil, err
 	}
 
-	return
-}
+	c.MsgConsumer, err = getMsgConsumer(&cfg.Transport, c.Tracer)
+	if err != nil {
+		return nil, err
+	}
 
-func getStorage(ctx context.Context, cfg *StorageConfig) (engine store.Engine, err error) {
-	switch cfg.Type {
-	case "in_memory":
-		engine = inmemory.NewStore(clock.RealClock{})
-	default:
-		return nil, fmt.Errorf("unknown storage type: %s", cfg.Type)
+	c.PasswordResetHandler, err = getPasswordResetHandler(cfg)
+	if err != nil {
+		return nil, err
 	}
 
 	return
@@ -110,7 +91,7 @@ func getTracerProvider(ctx context.Context, collectorAddr string) (*trace.Tracer
 			resource.WithTelemetrySDK(),
 			resource.WithAttributes(
 				// the service name used to display traces in backends
-				semconv.ServiceName("blog-post-service"),
+				semconv.ServiceName("blog-notification-service"),
 			),
 		)
 		if err != nil {
@@ -160,7 +141,7 @@ func getTracerProvider(ctx context.Context, collectorAddr string) (*trace.Tracer
 	return tracerProvider, nil
 }
 
-func getMsgProducer(cfg *TransportConfig, tracer oteltrace.Tracer) (transport.Producer, error) {
+func getMsgProducer(cfg *TransportSettingsConfig, tracer oteltrace.Tracer) (transport.Producer, error) {
 	switch cfg.Type {
 	case "kafka":
 		kafkaConnectTimeout, err := time.ParseDuration(cfg.Kafka.ConnectTimeout)
@@ -177,4 +158,44 @@ func getMsgProducer(cfg *TransportConfig, tracer oteltrace.Tracer) (transport.Pr
 	default:
 		return nil, fmt.Errorf("unknown transport type: %s", cfg.Type)
 	}
+}
+
+func getMsgConsumer(cfg *TransportSettingsConfig, tracer oteltrace.Tracer) (transport.Consumer, error) {
+	switch cfg.Type {
+	case "kafka":
+		kafkaConnectTimeout, err := time.ParseDuration(cfg.Kafka.ConnectTimeout)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse mqtt connect timeout: %w", err)
+		}
+
+		opts := []kafka.Opt[kafka.Consumer]{
+			kafka.WithKafkaBrokerUrls[kafka.Consumer](cfg.Kafka.Urls),
+			kafka.WithKafkaConnectSettings[kafka.Consumer](kafkaConnectTimeout),
+			kafka.WithKafkaConsumerGroup(cfg.Kafka.Group),
+			kafka.WithOtelTracer[kafka.Consumer](tracer),
+		}
+
+		return kafka.NewConsumer(opts...), nil
+	default:
+		return nil, fmt.Errorf("unknown transport type: %s", cfg.Type)
+	}
+}
+
+func getPasswordResetHandler(cfg *BaseConfig) (transport.MessageHandler, error) {
+	emailChannel, err := email.NewEmailChannel(
+		cfg.Channels.Email.Host,
+		cfg.Channels.Email.Port,
+		cfg.Channels.Email.Username,
+		cfg.Channels.Email.Password,
+		cfg.Channels.Email.FromAddr,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create email channel: %w", err)
+	}
+
+	return channels.NewPasswordResetHandler(
+		cfg.General.OrgName,
+		cfg.General.WebsiteBaseURL,
+		emailChannel,
+	), nil
 }

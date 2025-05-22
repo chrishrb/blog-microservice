@@ -6,7 +6,7 @@ type KafkaSettingsConfig struct {
 	ConnectTimeout string   `mapstructure:"connect_timeout" json:"connect_timeout" validate:"required"`
 }
 
-type TransportConfig struct {
+type TransportSettingsConfig struct {
 	Type  string               `mapstructure:"type" json:"type" validate:"required,oneof=kafka"`
 	Kafka *KafkaSettingsConfig `mapstructure:"kafka,omitempty" json:"kafka,omitempty" validate:"required_if=Type kafka"`
 }

@@ -111,7 +111,7 @@ func (c *Consumer) Consume(ctx context.Context, topic string, handler transport.
 				// add additional span attributes
 				span.SetAttributes(
 					attribute.String("message_id", msg.ID),
-					attribute.String("message_type", string(msg.Type)),
+					attribute.String("message_topic", topic),
 					semconv.MessagingMessageConversationID(msg.ID),
 				)
 

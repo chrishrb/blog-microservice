@@ -487,7 +487,8 @@ func TestRequestPasswordReset(t *testing.T) {
 	var resetEvent transport.PasswordResetEvent
 	err = json.Unmarshal(producer.ProducedMessages[0].Message.Data, &resetEvent)
 	require.NoError(t, err)
-	assert.Equal(t, "test@example.com", resetEvent.Email)
+	assert.Equal(t, "test@example.com", resetEvent.Recipient)
+	assert.Equal(t, "email", resetEvent.Channel)
 	assert.NotEmpty(t, resetEvent.Token)
 	assert.Greater(t, resetEvent.ExpiresIn, 0)
 }

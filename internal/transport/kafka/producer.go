@@ -36,7 +36,7 @@ func NewProducer(opts ...Opt[Producer]) *Producer {
 func (p *Producer) Produce(ctx context.Context, topic string, message *transport.Message) error {
 	payload, err := json.Marshal(message)
 	if err != nil {
-		return fmt.Errorf("marshaling message of type %s: %v", message.Type, err)
+		return fmt.Errorf("marshaling message: %v", err)
 	}
 
 	newCtx, span := p.tracer.Start(ctx,
@@ -46,9 +46,9 @@ func (p *Producer) Produce(ctx context.Context, topic string, message *transport
 			semconv.MessagingSystem("kafka"),
 			semconv.MessagingMessagePayloadSizeBytes(len(payload)),
 			semconv.MessagingOperationKey.String("produce"),
-			semconv.MessagingMessageConversationID(string(message.Type)),
+			semconv.MessagingMessageConversationID(topic),
 			attribute.String("message_id", message.ID),
-			attribute.String("message_type", string(message.Type)),
+			attribute.String("message_topic", topic),
 		))
 	defer span.End()
 

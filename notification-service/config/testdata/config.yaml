@@ -1,16 +1,20 @@
-api:
-  addr: ":9410"
-  host: example.com
-  org_name: "Example"
+general:
+  org_name: "Blog Microservices"
+  website_base_url: "https://example.com"
 transport:
   type: kafka
   kafka:
     urls:
       - localhost:9092
-    group: post-service
+    group: notification-service
 observability:
   log_format: text
   otel_collector_addr: localhost:4317
-  tls_keylog_file: /keylog/post-service.log
-storage:
-  type: in_memory
+  tls_keylog_file: /keylog/notification-service.log
+channels:
+  email:
+    host: smtp.example.com
+    port: 587
+    username: myuser
+    password: mypassword
+    from_addr: myuser@example.com

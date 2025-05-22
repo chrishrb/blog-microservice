@@ -184,7 +184,8 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data, err := json.Marshal(transport.PasswordResetEvent{
-		Email:     string(req.Email),
+		Recipient: string(req.Email),
+		Channel:   "email",
 		Token:     token,
 		ExpiresIn: int(expiresIn.Seconds()),
 	})
@@ -195,7 +196,6 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 
 	err = s.producer.Produce(r.Context(), transport.PasswordResetTopic, &transport.Message{
 		ID:   uuid.New().String(),
-		Type: transport.PasswordResetTopic,
 		Data: data,
 	})
 	if err != nil {

@@ -12,21 +12,20 @@ import (
 // BaseConfig provides the data structures that represent the configuration
 // and provides the ability to load the configuration from a YAML file.
 type BaseConfig struct {
-	Api           ApiSettingsConfig           `mapstructure:"api" json:"api" validate:"required"`
-	Transport     TransportConfig             `mapstructure:"transport" json:"transport" validate:"required"`
+	General       GeneralSettingsConfig       `mapstructure:"general" json:"general"`
+	Transport     TransportSettingsConfig     `mapstructure:"transport" json:"transport" validate:"required"`
 	Observability ObservabilitySettingsConfig `mapstructure:"observability" json:"observability" validate:"required"`
-	Storage       StorageConfig               `mapstructure:"storage" json:"storage" validate:"required"`
+	Channels      ChannelsSettingsConfig      `mapstructure:"channels" json:"channels"`
 }
 
 // DefaultConfig provides the default configuration. The configuration
 // read from the YAML file will overlay this configuration.
 var DefaultConfig = BaseConfig{
-	Api: ApiSettingsConfig{
-		Addr:    "localhost:9410",
-		Host:    "localhost",
-		OrgName: "chrishrb",
+	General: GeneralSettingsConfig{
+		OrgName:        "Blog Microservice",
+		WebsiteBaseURL: "https://example.com",
 	},
-	Transport: TransportConfig{
+	Transport: TransportSettingsConfig{
 		Type: "kafka",
 		Kafka: &KafkaSettingsConfig{
 			Urls:           []string{"localhost:9092"},
@@ -37,8 +36,14 @@ var DefaultConfig = BaseConfig{
 	Observability: ObservabilitySettingsConfig{
 		LogFormat: "text",
 	},
-	Storage: StorageConfig{
-		Type: "in_memory",
+	Channels: ChannelsSettingsConfig{
+		Email: EmailSettingsConfig{
+			Host:     "smtp.example.com",
+			Port:     587,
+			Username: "myuser",
+			Password: "mypassword",
+			FromAddr: "myuser@example.com",
+		},
 	},
 }
 

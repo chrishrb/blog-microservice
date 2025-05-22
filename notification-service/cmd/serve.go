@@ -4,8 +4,8 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/chrishrb/blog-microservice/user-service/config"
-	"github.com/chrishrb/blog-microservice/user-service/server"
+	"github.com/chrishrb/blog-microservice/internal/transport"
+	"github.com/chrishrb/blog-microservice/notification-service/config"
 	"github.com/spf13/cobra"
 )
 
@@ -16,7 +16,7 @@ var (
 // serveCmd represents the serve command
 var serveCmd = &cobra.Command{
 	Use:   "serve",
-	Short: "Start the user-service API server",
+	Short: "Start the notification-service",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg := config.DefaultConfig
 		if configFile != "" {
@@ -37,17 +37,18 @@ var serveCmd = &cobra.Command{
 			}
 		}()
 
-		apiHandler := server.NewApiHandler(
-			settings.Api,
-			settings.Storage,
-			settings.JWSVerifier,
-			settings.JWSSigner,
-			settings.MsgProducer,
-		)
-		apiServer := server.New("api", cfg.Api.Addr, nil, apiHandler)
 		errCh := make(chan error, 1)
-		apiServer.Start(errCh)
+		passwordResetConn, err := settings.MsgConsumer.Consume(context.Background(), transport.PasswordResetTopic, settings.PasswordResetHandler)
+		if err != nil {
+			errCh <- err
+		}
+
 		err = <-errCh
+
+		err = passwordResetConn.Disconnect(context.Background())
+		if err != nil {
+			slog.Warn("disconnecting from consumer", "err", err)
+		}
 
 		return err
 	},
