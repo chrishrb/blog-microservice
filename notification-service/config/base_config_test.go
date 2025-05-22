@@ -19,7 +19,7 @@ func TestParseConfig(t *testing.T) {
 			Addr: ":9412",
 		},
 		General: config.GeneralSettingsConfig{
-			OrgName:        "Blog Microservices",
+			OrgName:        "Blog Microservice",
 			WebsiteBaseURL: "https://example.com",
 		},
 		Transport: config.TransportSettingsConfig{

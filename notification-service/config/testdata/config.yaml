@@ -1,7 +1,7 @@
 api:
   addr: ":9412"
 general:
-  org_name: "Blog Microservices"
+  org_name: "Blog Microservice"
   website_base_url: "https://example.com"
 transport:
   type: kafka
