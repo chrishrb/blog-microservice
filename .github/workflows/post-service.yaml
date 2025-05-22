@@ -1,4 +1,4 @@
-name: Build notification-service
+name: Build post-service
 
 on:
   push:
@@ -11,11 +11,11 @@ on:
       - go.mod
       - go.sum
       - Dockerfile
-      - notification-service/**
+      - post-service/**
 
 env:
   REGISTRY: ghcr.io
-  SERVICE_NAME: notification-service
+  SERVICE_NAME: post-service
 
 jobs:
   test:
