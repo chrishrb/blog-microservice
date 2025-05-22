@@ -54,7 +54,7 @@ jobs:
         with:
           context: .
           build-args:
-            - BUILD_TARGET: notification-service
+            BUILD_TARGET: notification-service
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
