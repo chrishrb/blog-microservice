@@ -15,7 +15,7 @@ func TestStringSource(t *testing.T) {
 
 	data, err := source.GetData()
 	require.NoError(t, err)
-	assert.Equal(t, "hello world", data)
+	assert.Equal(t, []byte("hello world"), data)
 }
 
 func TestFileSource(t *testing.T) {
@@ -25,5 +25,5 @@ func TestFileSource(t *testing.T) {
 
 	data, err := source.GetData()
 	require.NoError(t, err)
-	assert.Contains(t, data, "-----BEGIN EC PRIVATE KEY-----")
+	assert.Contains(t, string(data), "-----BEGIN EC PRIVATE KEY-----")
 }

@@ -115,9 +115,9 @@ func TestListenerAddsTraceInformation(t *testing.T) {
 		testutil.AssertSpan(t, &exporter.GetSpans()[0], "topic123 receive", map[string]any{
 			"messaging.system":                     "kafka",
 			"messaging.operation":                  "receive",
-			"messaging.message.payload_size_bytes": 73,
+			"messaging.message.payload_size_bytes": 53,
 			"message_id":                           "my-message-id",
-			"message_type":                         "UserRegistered",
+			"message_topic":                         "topic123",
 			"messaging.consumer.id": func(val attribute.Value) bool {
 				return strings.HasPrefix(val.AsString(), "analytics-service-")
 			},

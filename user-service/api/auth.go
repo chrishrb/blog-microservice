@@ -177,7 +177,7 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, expiresIn, err := s.jwsSigner.CreatePasswordResetToken(user.ID)
+	token, _, err := s.jwsSigner.CreatePasswordResetToken(user.ID)
 	if err != nil {
 		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
@@ -186,8 +186,9 @@ func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
 	data, err := json.Marshal(transport.PasswordResetEvent{
 		Recipient: string(req.Email),
 		Channel:   "email",
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
 		Token:     token,
-		ExpiresIn: int(expiresIn.Seconds()),
 	})
 	if err != nil {
 		_ = render.Render(w, r, api_utils.ErrInternalError(err))

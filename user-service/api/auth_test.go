@@ -490,7 +490,8 @@ func TestRequestPasswordReset(t *testing.T) {
 	assert.Equal(t, "test@example.com", resetEvent.Recipient)
 	assert.Equal(t, "email", resetEvent.Channel)
 	assert.NotEmpty(t, resetEvent.Token)
-	assert.Greater(t, resetEvent.ExpiresIn, 0)
+	assert.Equal(t, "John", resetEvent.FirstName)
+	assert.Equal(t, "Doe", resetEvent.LastName)
 }
 
 func TestRequestPasswordReset_UserNotFound(t *testing.T) {
