@@ -117,7 +117,7 @@ func TestListenerAddsTraceInformation(t *testing.T) {
 			"messaging.operation":                  "receive",
 			"messaging.message.payload_size_bytes": 53,
 			"message_id":                           "my-message-id",
-			"message_topic":                         "topic123",
+			"message_topic":                        "topic123",
 			"messaging.consumer.id": func(val attribute.Value) bool {
 				return strings.HasPrefix(val.AsString(), "analytics-service-")
 			},
