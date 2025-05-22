@@ -19,7 +19,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func NewApiHandler(settings config.ApiSettings, engine store.Engine, JWSVerifier auth.JWSVerifier) http.Handler {
+func NewApiHandler(settings config.ApiSettings, engine store.Engine, jwsVerifier auth.JWSVerifier) http.Handler {
 	apiServer, err := api.NewServer(engine, clock.RealClock{})
 	if err != nil {
 		panic(err)
@@ -65,7 +65,7 @@ func NewApiHandler(settings config.ApiSettings, engine store.Engine, JWSVerifier
 	r.Get("/health", health)
 	r.Handle("/metrics", promhttp.Handler())
 	r.Get("/post-service/openapi.json", getApiSwaggerJson)
-	r.With(logger, auth.GetAuthMiddleware(swagger, JWSVerifier)).Mount("/post-service/v1", api.Handler(apiServer))
+	r.With(logger, auth.GetAuthMiddleware(swagger, jwsVerifier)).Mount("/post-service/v1", api.Handler(apiServer))
 	return r
 }
 

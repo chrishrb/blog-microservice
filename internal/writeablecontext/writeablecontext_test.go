@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/chrishrb/blog-microservice/user-service/writeablecontext"
+	"github.com/chrishrb/blog-microservice/internal/writeablecontext"
 )
 
 func TestFromRequest(t *testing.T) {

@@ -1,7 +1,6 @@
 package source_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/chrishrb/blog-microservice/internal/source"
@@ -14,7 +13,7 @@ func TestStringSource(t *testing.T) {
 		Data: "hello world",
 	}
 
-	data, err := source.GetData(context.TODO())
+	data, err := source.GetData()
 	require.NoError(t, err)
 	assert.Equal(t, "hello world", data)
 }
@@ -24,7 +23,7 @@ func TestFileSource(t *testing.T) {
 		FileName: "testdata/jwt.key.pem",
 	}
 
-	data, err := source.GetData(context.TODO())
+	data, err := source.GetData()
 	require.NoError(t, err)
 	assert.Contains(t, data, "-----BEGIN EC PRIVATE KEY-----")
 }

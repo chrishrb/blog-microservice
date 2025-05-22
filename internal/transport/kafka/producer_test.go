@@ -37,7 +37,7 @@ func TestProducerSendsMessage(t *testing.T) {
 
 	handler := func(ctx context.Context, msg *transport.Message, headers []kgo.RecordHeader) {
 		assert.Equal(t, "my-message-id", msg.ID)
-		assert.Equal(t, transport.MessageTypeUserRegistered, msg.Type)
+		assert.Equal(t, transport.MessageTypePasswordReset, msg.Type)
 		assert.Equal(t, json.RawMessage(`{"someKey":"someValue"}`), msg.Data)
 		rcvdCh <- struct{}{}
 	}
@@ -51,7 +51,7 @@ func TestProducerSendsMessage(t *testing.T) {
 	msg := transport.Message{
 		ID:   "my-message-id",
 		Type: "UserRegistered",
-		Data:     json.RawMessage(`{"someKey":"someValue"}`),
+		Data: json.RawMessage(`{"someKey":"someValue"}`),
 	}
 	err := producer.Produce(context.Background(), "topic123", &msg)
 	require.NoError(t, err)
@@ -108,7 +108,7 @@ func TestProducerAddsCorrelationData(t *testing.T) {
 	msg := transport.Message{
 		ID:   "my-message-id",
 		Type: "UserRegistered",
-		Data:     json.RawMessage(`{"someKey":"someValue"}`),
+		Data: json.RawMessage(`{"someKey":"someValue"}`),
 	}
 	err := producer.Produce(context.Background(), "topic123", &msg)
 	require.NoError(t, err)

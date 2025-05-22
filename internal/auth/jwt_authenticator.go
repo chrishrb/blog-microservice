@@ -47,7 +47,7 @@ func Authenticate(v JWSVerifier, ctx context.Context, input *openapi3filter.Auth
 	}
 
 	// if the JWS is valid, we have a JWT, which will contain a bunch of claims.
-	token, err := v.ValidateJWS(jws)
+	token, err := v.ValidateToken(jws)
 	if err != nil {
 		return fmt.Errorf("validating JWS: %w", err)
 	}

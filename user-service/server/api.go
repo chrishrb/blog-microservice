@@ -5,10 +5,11 @@ import (
 	"os"
 
 	"github.com/chrishrb/blog-microservice/internal/auth"
+	"github.com/chrishrb/blog-microservice/internal/transport"
+	"github.com/chrishrb/blog-microservice/internal/writeablecontext"
 	"github.com/chrishrb/blog-microservice/user-service/api"
 	"github.com/chrishrb/blog-microservice/user-service/config"
 	"github.com/chrishrb/blog-microservice/user-service/store"
-	"github.com/chrishrb/blog-microservice/internal/writeablecontext"
 	"github.com/riandyrn/otelchi"
 	"github.com/rs/cors"
 	"github.com/unrolled/secure"
@@ -19,8 +20,14 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-func NewApiHandler(settings config.ApiSettings, engine store.Engine, JWSVerifier auth.JWSVerifier, JWSSigner auth.JWSSigner) http.Handler {
-	apiServer, err := api.NewServer(engine, clock.RealClock{}, JWSVerifier, JWSSigner)
+func NewApiHandler(
+	settings config.ApiSettings,
+	engine store.Engine,
+	jwsVerifier auth.JWSVerifier,
+	jwsSigner auth.JWSSigner,
+	producer transport.Producer,
+) http.Handler {
+	apiServer, err := api.NewServer(engine, clock.RealClock{}, jwsVerifier, jwsSigner, producer)
 	if err != nil {
 		panic(err)
 	}
@@ -56,7 +63,7 @@ func NewApiHandler(settings config.ApiSettings, engine store.Engine, JWSVerifier
 	r.Get("/health", health)
 	r.Handle("/metrics", promhttp.Handler())
 	r.Get("/user-service/openapi.json", getApiSwaggerJson)
-	r.With(logger, auth.GetAuthMiddleware(swagger, JWSVerifier)).Mount("/user-service/v1", api.Handler(apiServer))
+	r.With(logger, auth.GetAuthMiddleware(swagger, jwsVerifier)).Mount("/user-service/v1", api.Handler(apiServer))
 	return r
 }
 

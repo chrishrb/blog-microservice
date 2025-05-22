@@ -4,31 +4,23 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/chrishrb/blog-microservice/internal/auth"
+	"github.com/chrishrb/blog-microservice/internal/transport"
 	"github.com/chrishrb/blog-microservice/user-service/api"
 	"github.com/chrishrb/blog-microservice/user-service/service"
 	"github.com/chrishrb/blog-microservice/user-service/store"
-	"github.com/chrishrb/blog-microservice/user-service/store/inmemory"
-	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
-	"github.com/lestrrat-go/jwx/jwa"
-	"github.com/lestrrat-go/jwx/jwt"
-	"github.com/oapi-codegen/oapi-codegen/v2/pkg/ecdsafile"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"k8s.io/utils/clock"
-	clockTest "k8s.io/utils/clock/testing"
 )
 
 func TestLoginUser(t *testing.T) {
-	server, r, engine, jwsSigner := setupServerWithJWS(t)
+	server, r, engine, _, _, _ := setupServer(t)
 	defer server.Close()
 
 	userID := uuid.New()
@@ -73,11 +65,11 @@ func TestLoginUser(t *testing.T) {
 	// Check that tokens are not empty
 	assert.NotEmpty(t, authRes.AccessToken)
 	assert.NotEmpty(t, authRes.RefreshToken)
-	assert.Equal(t, int(jwsSigner.GetAccessTokenExpiresIn().Seconds()), authRes.ExpiresIn)
+	assert.Equal(t, int(time.Duration(5*time.Minute).Seconds()), authRes.ExpiresIn)
 }
 
 func TestLoginUser_WrongPassword(t *testing.T) {
-	server, r, engine, _ := setupServer(t)
+	server, r, engine, _, _, _ := setupServer(t)
 	defer server.Close()
 
 	userID := uuid.New()
@@ -118,7 +110,7 @@ func TestLoginUser_WrongPassword(t *testing.T) {
 }
 
 func TestLoginUser_UserNotFound(t *testing.T) {
-	server, r, _, _ := setupServer(t)
+	server, r, _, _, _, _ := setupServer(t)
 	defer server.Close()
 
 	// Test login with non-existent user
@@ -143,7 +135,7 @@ func TestLoginUser_UserNotFound(t *testing.T) {
 }
 
 func TestLoginUser_InactiveUser(t *testing.T) {
-	server, r, engine, _ := setupServer(t)
+	server, r, engine, _, _, _ := setupServer(t)
 	defer server.Close()
 
 	userID := uuid.New()
@@ -184,7 +176,7 @@ func TestLoginUser_InactiveUser(t *testing.T) {
 }
 
 func TestLoginUser_Admin(t *testing.T) {
-	server, r, engine, _ := setupServerWithJWS(t)
+	server, r, engine, _, _, _ := setupServer(t)
 	defer server.Close()
 
 	userID := uuid.New()
@@ -228,18 +220,18 @@ func TestLoginUser_Admin(t *testing.T) {
 }
 
 func TestLogoutUser(t *testing.T) {
-	server, r, engine, jwsSigner := setupServerWithJWS(t)
+	server, r, engine, _, jwsSigner, _ := setupServer(t)
 	defer server.Close()
 
 	userID := uuid.New()
 
 	// Create a refresh token and store it
-	refreshToken, err := jwsSigner.CreateRefreshJWS(userID)
+	refreshToken, refreshTokenExpiresIn, err := jwsSigner.CreateRefreshToken(userID)
 	require.NoError(t, err)
 	err = engine.SetToken(context.Background(), &store.Token{
 		UserID:  userID,
 		Token:   refreshToken,
-		TTL:     jwsSigner.GetRefreshTokenExpiresIn(),
+		TTL:     refreshTokenExpiresIn,
 		Revoked: false,
 	})
 	require.NoError(t, err)
@@ -265,7 +257,7 @@ func TestLogoutUser(t *testing.T) {
 }
 
 func TestRefreshToken(t *testing.T) {
-	server, r, engine, jwsSigner := setupServerWithJWS(t)
+	server, r, engine, _, jwsSigner, _ := setupServer(t)
 	defer server.Close()
 
 	userID := uuid.New()
@@ -283,12 +275,12 @@ func TestRefreshToken(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a refresh token and store it
-	refreshToken, err := jwsSigner.CreateRefreshJWS(userID)
+	refreshToken, refreshTokenExpiresIn, err := jwsSigner.CreateRefreshToken(userID)
 	require.NoError(t, err)
 	err = engine.SetToken(context.Background(), &store.Token{
 		UserID:  userID,
 		Token:   refreshToken,
-		TTL:     jwsSigner.GetRefreshTokenExpiresIn(),
+		TTL:     refreshTokenExpiresIn,
 		Revoked: false,
 	})
 	require.NoError(t, err)
@@ -318,11 +310,11 @@ func TestRefreshToken(t *testing.T) {
 	// Check that new tokens are not empty
 	assert.NotEmpty(t, authRes.AccessToken)
 	assert.NotEmpty(t, authRes.RefreshToken)
-	assert.Equal(t, int(jwsSigner.GetAccessTokenExpiresIn().Seconds()), authRes.ExpiresIn)
+	assert.Equal(t, int(time.Duration(5*time.Minute).Seconds()), authRes.ExpiresIn)
 }
 
 func TestRefreshToken_RevokedToken(t *testing.T) {
-	server, r, engine, jwsSigner := setupServerWithJWS(t)
+	server, r, engine, _, jwsSigner, _ := setupServer(t)
 	defer server.Close()
 
 	userID := uuid.New()
@@ -340,14 +332,14 @@ func TestRefreshToken_RevokedToken(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a refresh token
-	refreshToken, err := jwsSigner.CreateRefreshJWS(userID)
+	refreshToken, refreshTokenExpiresIn, err := jwsSigner.CreateRefreshToken(userID)
 	require.NoError(t, err)
 
 	// Store the token as revoked
 	err = engine.SetToken(context.Background(), &store.Token{
 		UserID:  userID,
 		Token:   refreshToken,
-		TTL:     jwsSigner.GetRefreshTokenExpiresIn(),
+		TTL:     refreshTokenExpiresIn,
 		Revoked: true,
 	})
 	require.NoError(t, err)
@@ -373,7 +365,7 @@ func TestRefreshToken_RevokedToken(t *testing.T) {
 }
 
 func TestRefreshToken_InvalidToken(t *testing.T) {
-	server, r, _, _ := setupServerWithJWS(t)
+	server, r, _, _, _, _ := setupServer(t)
 	defer server.Close()
 
 	// Make refresh token request with invalid token
@@ -397,7 +389,7 @@ func TestRefreshToken_InvalidToken(t *testing.T) {
 }
 
 func TestRefreshToken_InactiveUser(t *testing.T) {
-	server, r, engine, jwsSigner := setupServerWithJWS(t)
+	server, r, engine, _, jwsSigner, _ := setupServer(t)
 	defer server.Close()
 
 	userID := uuid.New()
@@ -415,14 +407,14 @@ func TestRefreshToken_InactiveUser(t *testing.T) {
 	require.NoError(t, err)
 
 	// Create a refresh token
-	refreshToken, err := jwsSigner.CreateRefreshJWS(userID)
+	refreshToken, refreshTokenExpiresIn, err := jwsSigner.CreateRefreshToken(userID)
 	require.NoError(t, err)
 
 	// Store the token
 	err = engine.SetToken(context.Background(), &store.Token{
 		UserID:  userID,
 		Token:   refreshToken,
-		TTL:     jwsSigner.GetRefreshTokenExpiresIn(),
+		TTL:     refreshTokenExpiresIn,
 		Revoked: false,
 	})
 	require.NoError(t, err)
@@ -447,84 +439,227 @@ func TestRefreshToken_InactiveUser(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, rr.Result().StatusCode)
 }
 
-type MockJWSSigner struct{}
+func TestRequestPasswordReset(t *testing.T) {
+	server, r, engine, _, _, producer := setupServer(t)
+	defer server.Close()
 
-const PrivateKey = `-----BEGIN EC PRIVATE KEY-----
-MHcCAQEEIN2dALnjdcZaIZg4QuA6Dw+kxiSW502kJfmBN3priIhPoAoGCCqGSM49
-AwEHoUQDQgAE4pPyvrB9ghqkT1Llk0A42lixkugFd/TBdOp6wf69O9Nndnp4+HcR
-s9SlG/8hjB2Hz42v4p3haKWv3uS1C6ahCQ==
------END EC PRIVATE KEY-----`
+	userID := uuid.New()
 
-func (s *MockJWSSigner) CreateJWS(userID uuid.UUID, claims []string) (string, error) {
-	privKey, err := ecdsafile.LoadEcdsaPrivateKey([]byte(PrivateKey))
-	if err != nil {
-		return "", fmt.Errorf("loading PEM private key: %w", err)
-	}
-	token, err := jwt.
-		NewBuilder().
-		Subject(userID.String()).
-		Claim("permissions", claims).
-		Build()
-	if err != nil {
-		return "", err
-	}
-	t, err := jwt.Sign(token, jwa.ES256, privKey)
-	if err != nil {
-		return "", err
-	}
-	return string(t), nil
-}
-
-func (s *MockJWSSigner) CreateRefreshJWS(userID uuid.UUID) (string, error) {
-	privKey, err := ecdsafile.LoadEcdsaPrivateKey([]byte(PrivateKey))
-	if err != nil {
-		return "", fmt.Errorf("loading PEM private key: %w", err)
-	}
-	token, err := jwt.
-		NewBuilder().
-		Subject(userID.String()).
-		Claim("permissions", []string{}).
-		Build()
-	if err != nil {
-		return "", err
-	}
-	t, err := jwt.Sign(token, jwa.ES256, privKey)
-	if err != nil {
-		return "", err
-	}
-	return string(t), nil
-}
-
-func (s *MockJWSSigner) GetAccessTokenExpiresIn() time.Duration {
-	d, _ := time.ParseDuration("10m")
-	return d
-}
-
-func (s *MockJWSSigner) GetRefreshTokenExpiresIn() time.Duration {
-	d, _ := time.ParseDuration("1h")
-	return d
-}
-
-type MockJWSVerifier struct{}
-
-func (v *MockJWSVerifier) ValidateJWS(jws string) (jwt.Token, error) {
-	return jwt.Parse([]byte(jws))
-}
-
-func setupServerWithJWS(t *testing.T) (*httptest.Server, *chi.Mux, store.Engine, auth.JWSSigner) {
-	engine := inmemory.NewStore(clock.RealClock{})
-
-	jwsSigner := &MockJWSSigner{}
-	jwsVerifier := &MockJWSVerifier{}
-
-	now := time.Now().UTC()
-	c := clockTest.NewFakePassiveClock(now)
-	srv, err := api.NewServer(engine, c, jwsVerifier, jwsSigner)
+	// Create a user
+	err := engine.SetUser(context.Background(), &store.User{
+		ID:           userID,
+		Email:        "test@example.com",
+		FirstName:    "John",
+		LastName:     "Doe",
+		PasswordHash: "hashedpassword",
+		Status:       store.StatusActive,
+		Role:         store.RoleUser,
+	})
 	require.NoError(t, err)
 
-	r := chi.NewRouter()
-	r.Mount("/", api.Handler(srv))
-	server := httptest.NewServer(r)
+	// Test password reset request
+	resetReq := api.PasswordResetRequest{
+		Email: openapi_types.Email("test@example.com"),
+	}
+	jsonData, err := json.Marshal(resetReq)
+	require.NoError(t, err)
 
-	return server, r, engine, jwsSigner
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/auth/password-reset",
+		bytes.NewBuffer(jsonData),
+	)
+	req.Header.Set("content-type", "application/json")
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	// Verify success response
+	assert.Equal(t, http.StatusOK, rr.Result().StatusCode)
+
+	// Verify message was produced
+	require.NotNil(t, producer.ProducedMessages)
+	assert.Len(t, producer.ProducedMessages, 1)
+	assert.NotEmpty(t, producer.ProducedMessages[0].Message.ID)
+	assert.Equal(t, transport.PasswordResetTopic, producer.ProducedMessages[0].Topic)
+	assert.NotEmpty(t, producer.ProducedMessages[0].Message.Data)
+
+	// Verify message content
+	var resetEvent transport.PasswordResetEvent
+	err = json.Unmarshal(producer.ProducedMessages[0].Message.Data, &resetEvent)
+	require.NoError(t, err)
+	assert.Equal(t, "test@example.com", resetEvent.Email)
+	assert.NotEmpty(t, resetEvent.Token)
+	assert.Greater(t, resetEvent.ExpiresIn, 0)
+}
+
+func TestRequestPasswordReset_UserNotFound(t *testing.T) {
+	server, r, _, _, _, _ := setupServer(t)
+	defer server.Close()
+
+	// Test with non-existent user
+	resetReq := api.PasswordResetRequest{
+		Email: openapi_types.Email("nonexistent@example.com"),
+	}
+	jsonData, err := json.Marshal(resetReq)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/auth/password-reset",
+		bytes.NewBuffer(jsonData),
+	)
+	req.Header.Set("content-type", "application/json")
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	// Verify bad request response
+	assert.Equal(t, http.StatusBadRequest, rr.Result().StatusCode)
+}
+
+func TestResetPassword(t *testing.T) {
+	server, r, engine, _, jwsSigner, _ := setupServer(t)
+	defer server.Close()
+
+	userID := uuid.New()
+
+	// Create a user
+	err := engine.SetUser(context.Background(), &store.User{
+		ID:           userID,
+		Email:        "test@example.com",
+		FirstName:    "John",
+		LastName:     "Doe",
+		PasswordHash: "oldhash",
+		Status:       store.StatusActive,
+		Role:         store.RoleUser,
+	})
+	require.NoError(t, err)
+
+	// Create a password reset token
+	resetToken, _, err := jwsSigner.CreatePasswordResetToken(userID)
+	require.NoError(t, err)
+
+	// Test password reset
+	resetReq := api.PasswordResetConfirmation{
+		NewPassword:     "newpassword123",
+		ConfirmPassword: "newpassword123",
+	}
+	jsonData, err := json.Marshal(resetReq)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/auth/password-reset/"+resetToken,
+		bytes.NewBuffer(jsonData),
+	)
+	req.Header.Set("content-type", "application/json")
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	// Verify success response
+	assert.Equal(t, http.StatusOK, rr.Result().StatusCode)
+
+	// Verify password was updated
+	user, err := engine.LookupUser(context.Background(), userID)
+	require.NoError(t, err)
+	assert.NotEqual(t, "oldhash", user.PasswordHash)
+	assert.True(t, service.VerifyPassword("newpassword123", user.PasswordHash))
+}
+
+func TestResetPassword_PasswordMismatch(t *testing.T) {
+	server, r, _, _, jwsSigner, _ := setupServer(t)
+	defer server.Close()
+
+	userID := uuid.New()
+
+	// Create a password reset token
+	resetToken, _, err := jwsSigner.CreatePasswordResetToken(userID)
+	require.NoError(t, err)
+
+	// Test password reset with mismatched passwords
+	resetReq := api.PasswordResetConfirmation{
+		NewPassword:     "newpassword123",
+		ConfirmPassword: "differentpassword",
+	}
+	jsonData, err := json.Marshal(resetReq)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/auth/password-reset/"+resetToken,
+		bytes.NewBuffer(jsonData),
+	)
+	req.Header.Set("content-type", "application/json")
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	// Verify bad request response
+	assert.Equal(t, http.StatusBadRequest, rr.Result().StatusCode)
+}
+
+func TestResetPassword_InvalidToken(t *testing.T) {
+	server, r, _, _, _, _ := setupServer(t)
+	defer server.Close()
+
+	// Test password reset with invalid token
+	resetReq := api.PasswordResetConfirmation{
+		NewPassword:     "newpassword123",
+		ConfirmPassword: "newpassword123",
+	}
+	jsonData, err := json.Marshal(resetReq)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/auth/password-reset/invalid-token",
+		bytes.NewBuffer(jsonData),
+	)
+	req.Header.Set("content-type", "application/json")
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	// Verify bad request response
+	assert.Equal(t, http.StatusBadRequest, rr.Result().StatusCode)
+}
+
+func TestResetPassword_InactiveUser(t *testing.T) {
+	server, r, engine, _, jwsSigner, _ := setupServer(t)
+	defer server.Close()
+
+	userID := uuid.New()
+
+	// Create an inactive user
+	err := engine.SetUser(context.Background(), &store.User{
+		ID:           userID,
+		Email:        "inactive@example.com",
+		FirstName:    "John",
+		LastName:     "Doe",
+		PasswordHash: "oldhash",
+		Status:       store.StatusBanned,
+		Role:         store.RoleUser,
+	})
+	require.NoError(t, err)
+
+	// Create a password reset token
+	resetToken, _, err := jwsSigner.CreatePasswordResetToken(userID)
+	require.NoError(t, err)
+
+	// Test password reset for inactive user
+	resetReq := api.PasswordResetConfirmation{
+		NewPassword:     "newpassword123",
+		ConfirmPassword: "newpassword123",
+	}
+	jsonData, err := json.Marshal(resetReq)
+	require.NoError(t, err)
+
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/auth/password-reset/"+resetToken,
+		bytes.NewBuffer(jsonData),
+	)
+	req.Header.Set("content-type", "application/json")
+	rr := httptest.NewRecorder()
+	r.ServeHTTP(rr, req)
+
+	// Verify bad request response
+	assert.Equal(t, http.StatusBadRequest, rr.Result().StatusCode)
 }

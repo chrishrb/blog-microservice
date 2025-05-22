@@ -46,7 +46,7 @@ func (p *Producer) Produce(ctx context.Context, topic string, message *transport
 			semconv.MessagingSystem("kafka"),
 			semconv.MessagingMessagePayloadSizeBytes(len(payload)),
 			semconv.MessagingOperationKey.String("produce"),
-			semconv.MessagingMessageConversationID(message.Type),
+			semconv.MessagingMessageConversationID(string(message.Type)),
 			attribute.String("message_id", message.ID),
 			attribute.String("message_type", string(message.Type)),
 		))

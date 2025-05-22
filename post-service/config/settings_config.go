@@ -7,9 +7,9 @@ type CorsConfig struct {
 }
 
 type ApiSettingsConfig struct {
-	Addr    string `mapstructure:"addr" json:"addr" validate:"required"`
-	Host    string `mapstructure:"host,omitempty" json:"host,omitempty"`
-	OrgName string `mapstructure:"org_name,omitempty" json:"org_name,omitempty"`
+	Addr    string      `mapstructure:"addr" json:"addr" validate:"required"`
+	Host    string      `mapstructure:"host,omitempty" json:"host,omitempty"`
+	OrgName string      `mapstructure:"org_name,omitempty" json:"org_name,omitempty"`
 	Cors    *CorsConfig `mapstructure:"cors,omitempty" json:"cors,omitempty"`
 }
 

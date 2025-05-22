@@ -19,7 +19,7 @@ import (
 )
 
 func TestCreateUser(t *testing.T) {
-	server, r, engine, _ := setupServer(t)
+	server, r, engine, _, _, _ := setupServer(t)
 	defer server.Close()
 
 	d := api.UserCreate{
@@ -64,7 +64,7 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestListUsers(t *testing.T) {
-	server, r, engine, _ := setupServer(t)
+	server, r, engine, _, _, _ := setupServer(t)
 	defer server.Close()
 
 	userID1 := uuid.New()
@@ -108,17 +108,32 @@ func TestListUsers(t *testing.T) {
 	require.Equal(t, 2, len(resList))
 
 	// Check that our created users exist in the response
-	assert.Equal(t, userID1, resList[0].Id)
-	assert.Equal(t, openapi_types.Email("john@example.com"), resList[0].Email)
-	assert.Equal(t, api.UserRoleAdmin, resList[0].Role)
+	expected := map[uuid.UUID]struct {
+		Email openapi_types.Email
+		Role  api.UserRole
+	}{
+		userID1: {
+			Email: openapi_types.Email("john@example.com"),
+			Role:  api.UserRoleAdmin,
+		},
+		userID2: {
+			Email: openapi_types.Email("jane@example.com"),
+			Role:  api.UserRoleUser,
+		},
+	}
 
-	assert.Equal(t, userID2, resList[1].Id)
-	assert.Equal(t, openapi_types.Email("jane@example.com"), resList[1].Email)
-	assert.Equal(t, api.UserRoleUser, resList[1].Role)
+	require.Equal(t, len(expected), len(resList))
+
+	for _, user := range resList {
+		exp, ok := expected[user.Id]
+		require.True(t, ok, "unexpected user ID: %s", user.Id)
+		assert.Equal(t, exp.Email, user.Email)
+		assert.Equal(t, exp.Role, user.Role)
+	}
 }
 
 func TestDeleteUser(t *testing.T) {
-	server, r, engine, _ := setupServer(t)
+	server, r, engine, _, _, _ := setupServer(t)
 	defer server.Close()
 
 	userID := uuid.New()
@@ -146,7 +161,7 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestLookupUser(t *testing.T) {
-	server, r, engine, _ := setupServer(t)
+	server, r, engine, _, _, _ := setupServer(t)
 	defer server.Close()
 
 	userID := uuid.New()
@@ -185,7 +200,7 @@ func TestLookupUser(t *testing.T) {
 }
 
 func TestLookupUser_NotFound(t *testing.T) {
-	server, r, _, _ := setupServer(t)
+	server, r, _, _, _, _ := setupServer(t)
 	defer server.Close()
 
 	// Lookup a non-existent user
@@ -202,7 +217,7 @@ func TestLookupUser_NotFound(t *testing.T) {
 }
 
 func TestUpdateUser(t *testing.T) {
-	server, r, engine, _ := setupServer(t)
+	server, r, engine, _, _, _ := setupServer(t)
 	defer server.Close()
 
 	userID := uuid.New()
@@ -259,7 +274,7 @@ func TestUpdateUser(t *testing.T) {
 }
 
 func TestUpdateUser_NotFound(t *testing.T) {
-	server, r, _, _ := setupServer(t)
+	server, r, _, _, _, _ := setupServer(t)
 	defer server.Close()
 
 	userID := uuid.New()
@@ -284,7 +299,7 @@ func TestUpdateUser_NotFound(t *testing.T) {
 }
 
 func TestGetCurrentUser(t *testing.T) {
-	server, r, engine, _ := setupServer(t)
+	server, r, engine, _, _, _ := setupServer(t)
 	defer server.Close()
 
 	userID := uuid.New()
@@ -324,7 +339,7 @@ func TestGetCurrentUser(t *testing.T) {
 }
 
 func TestUpdateCurrentUser(t *testing.T) {
-	server, r, engine, _ := setupServer(t)
+	server, r, engine, _, _, _ := setupServer(t)
 	defer server.Close()
 
 	userID := uuid.New()
@@ -386,7 +401,7 @@ func TestUpdateCurrentUser(t *testing.T) {
 }
 
 func TestUpdateCurrentUser_IncorrectPassword(t *testing.T) {
-	server, r, engine, _ := setupServer(t)
+	server, r, engine, _, _, _ := setupServer(t)
 	defer server.Close()
 
 	userID := uuid.New()

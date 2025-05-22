@@ -6,7 +6,7 @@ import (
 )
 
 type ErrResponse struct {
-	Err            error `json:"-"` // low-level runtime error
+	Err            error `json:"-"`          // low-level runtime error
 	HTTPStatusCode int   `json:"statusCode"` // http response status code
 
 	StatusText string `json:"status"`          // http status message

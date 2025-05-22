@@ -14,12 +14,13 @@ import (
 )
 
 const PermissionsClaim = "permissions"
+const TypeClaim = "type"
+const TypePasswordReset = "password_reset"
 
 type JWSSigner interface {
-	CreateJWS(userID uuid.UUID, claims []string) (string, error)
-	CreateRefreshJWS(userID uuid.UUID) (string, error)
-	GetAccessTokenExpiresIn() time.Duration
-	GetRefreshTokenExpiresIn() time.Duration
+	CreateAccessToken(userID uuid.UUID, claims []string) (string, time.Duration, error)
+	CreateRefreshToken(userID uuid.UUID) (string, time.Duration, error)
+	CreatePasswordResetToken(userID uuid.UUID) (string, time.Duration, error)
 }
 
 type LocalJWSSigner struct {
@@ -60,69 +61,84 @@ func NewLocalJWSSigner(
 	}, nil
 }
 
-// CreateJWS creates a JWS with the given user ID and claims. The claims are
+// CreateAccessToken creates a JWS with the given user ID and claims. The claims are
 // added to the "permissions" claim in the JWS.
-func (s *LocalJWSSigner) CreateJWS(userID uuid.UUID, claims []string) (string, error) {
+func (s *LocalJWSSigner) CreateAccessToken(userID uuid.UUID, claims []string) (string, time.Duration, error) {
 	t := jwt.New()
 	err := t.Set(jwt.IssuerKey, s.issuer)
 	if err != nil {
-		return "", fmt.Errorf("setting issuer: %w", err)
+		return "", 0, fmt.Errorf("setting issuer: %w", err)
 	}
 	err = t.Set(jwt.AudienceKey, s.audience)
 	if err != nil {
-		return "", fmt.Errorf("setting audience: %w", err)
+		return "", 0, fmt.Errorf("setting audience: %w", err)
 	}
 	err = t.Set(jwt.SubjectKey, userID.String())
 	if err != nil {
-		return "", fmt.Errorf("setting subject: %w", err)
+		return "", 0, fmt.Errorf("setting subject: %w", err)
 	}
 	err = t.Set(PermissionsClaim, claims)
 	if err != nil {
-		return "", fmt.Errorf("setting permissions: %w", err)
+		return "", 0, fmt.Errorf("setting permissions: %w", err)
 	}
 	err = t.Set(jwt.ExpirationKey, time.Now().Add(s.accessTokenExpiresIn).Unix())
 	if err != nil {
-		return "", fmt.Errorf("setting expiration: %w", err)
+		return "", 0, fmt.Errorf("setting expiration: %w", err)
 	}
 	token, err := s.signToken(t)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
-	return string(token), nil
+	return string(token), s.accessTokenExpiresIn, nil
 }
 
-// CreateRefreshJWS creates a refresh JWS
-func (s *LocalJWSSigner) CreateRefreshJWS(userID uuid.UUID) (string, error) {
+// CreateRefreshToken creates a refresh JWS
+func (s *LocalJWSSigner) CreateRefreshToken(userID uuid.UUID) (string, time.Duration, error) {
 	t := jwt.New()
 	err := t.Set(jwt.IssuerKey, s.issuer)
 	if err != nil {
-		return "", fmt.Errorf("setting issuer: %w", err)
+		return "", 0, fmt.Errorf("setting issuer: %w", err)
 	}
 	err = t.Set(jwt.AudienceKey, s.audience)
 	if err != nil {
-		return "", fmt.Errorf("setting audience: %w", err)
+		return "", 0, fmt.Errorf("setting audience: %w", err)
 	}
 	err = t.Set(jwt.SubjectKey, userID.String())
 	if err != nil {
-		return "", fmt.Errorf("setting subject: %w", err)
+		return "", 0, fmt.Errorf("setting subject: %w", err)
 	}
 	err = t.Set(jwt.ExpirationKey, time.Now().Add(s.refreshTokenExpiresIn).Unix())
 	if err != nil {
-		return "", fmt.Errorf("setting expiration: %w", err)
+		return "", 0, fmt.Errorf("setting expiration: %w", err)
 	}
 	token, err := s.signToken(t)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
-	return string(token), nil
+	return string(token), s.refreshTokenExpiresIn, nil
 }
 
-func (s *LocalJWSSigner) GetAccessTokenExpiresIn() time.Duration {
-	return s.accessTokenExpiresIn
-}
-
-func (s *LocalJWSSigner) GetRefreshTokenExpiresIn() time.Duration {
-	return s.refreshTokenExpiresIn
+// CreateRefreshToken creates a refresh JWS
+func (s *LocalJWSSigner) CreatePasswordResetToken(userID uuid.UUID) (string, time.Duration, error) {
+	t := jwt.New()
+	err := t.Set(jwt.SubjectKey, userID.String())
+	expiresIn := time.Duration(15 * time.Minute)
+	if err != nil {
+		return "", 0, fmt.Errorf("setting subject: %w", err)
+	}
+	err = t.Set(TypeClaim, TypePasswordReset)
+	if err != nil {
+		return "", 0, fmt.Errorf("setting subject: %w", err)
+	}
+	err = t.Set(jwt.ExpirationKey, time.Now().Add(expiresIn).Unix())
+	if err != nil {
+		return "", 0, fmt.Errorf("setting expiration: %w", err)
+	}
+	token, err := s.signToken(t)
+	if err != nil {
+		return "", 0, err
+	}
+	return string(token), expiresIn, nil
 }
 
 // SignToken takes a JWT and signs it with our private key, returning a JWS.

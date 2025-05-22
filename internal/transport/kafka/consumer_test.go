@@ -32,7 +32,7 @@ func TestListenerProcessesMessagesReceivedFromTheBroker(t *testing.T) {
 	// setup the handler
 	receivedMsgCh := make(chan struct{})
 	handler := func(ctx context.Context, msg *transport.Message) {
-		assert.Equal(t, transport.MessageTypeUserRegistered, msg.Type)
+		assert.Equal(t, transport.MessageTypePasswordReset, msg.Type)
 		assert.Equal(t, "my-message-id", msg.ID)
 		assert.Equal(t, json.RawMessage(`{"someKey":"someValue"}`), msg.Data)
 		receivedMsgCh <- struct{}{}
@@ -55,7 +55,7 @@ func TestListenerProcessesMessagesReceivedFromTheBroker(t *testing.T) {
 	publishMessage(t, ctx, broker.ListenAddrs(), "topic123", transport.Message{
 		ID:   "my-message-id",
 		Type: "UserRegistered",
-		Data:     json.RawMessage(`{"someKey":"someValue"}`),
+		Data: json.RawMessage(`{"someKey":"someValue"}`),
 	})
 
 	// wait for message to be received / timeout
@@ -105,7 +105,7 @@ func TestListenerAddsTraceInformation(t *testing.T) {
 	publishMessage(t, newCtx, broker.ListenAddrs(), "topic123", transport.Message{
 		ID:   "my-message-id",
 		Type: "UserRegistered",
-		Data:     json.RawMessage(`{"someKey":"someValue"}`),
+		Data: json.RawMessage(`{"someKey":"someValue"}`),
 	})
 
 	// wait for message to be received / timeout

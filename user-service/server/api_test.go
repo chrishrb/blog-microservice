@@ -18,7 +18,7 @@ import (
 )
 
 func TestHealthHandler(t *testing.T) {
-	handler := server.NewApiHandler(config.ApiSettings{}, inmemory.NewStore(clock.RealClock{}), nil, nil)
+	handler := server.NewApiHandler(config.ApiSettings{}, inmemory.NewStore(clock.RealClock{}), nil, nil, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/health", nil)
 	w := httptest.NewRecorder()
@@ -37,7 +37,7 @@ func TestHealthHandler(t *testing.T) {
 }
 
 func TestMetricsHandler(t *testing.T) {
-	handler := server.NewApiHandler(config.ApiSettings{}, inmemory.NewStore(clock.RealClock{}), nil, nil)
+	handler := server.NewApiHandler(config.ApiSettings{}, inmemory.NewStore(clock.RealClock{}), nil, nil, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
 	w := httptest.NewRecorder()
@@ -61,7 +61,7 @@ func TestMetricsHandler(t *testing.T) {
 }
 
 func TestSwaggerHandler(t *testing.T) {
-	handler := server.NewApiHandler(config.ApiSettings{}, inmemory.NewStore(clock.RealClock{}), nil, nil)
+	handler := server.NewApiHandler(config.ApiSettings{}, inmemory.NewStore(clock.RealClock{}), nil, nil, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/user-service/openapi.json", nil)
 	w := httptest.NewRecorder()
@@ -89,13 +89,17 @@ func TestSwaggerHandler(t *testing.T) {
 
 type mockJWSVerifier struct{}
 
-func (m *mockJWSVerifier) ValidateJWS(jws string) (jwt.Token, error) {
+func (m *mockJWSVerifier) ValidateToken(jws string) (jwt.Token, error) {
+	return nil, errors.New("unauthorized")
+}
+
+func (m *mockJWSVerifier) ValidatePasswordResetToken(jws string) (jwt.Token, error) {
 	return nil, errors.New("unauthorized")
 }
 
 func TestAuthMiddleware(t *testing.T) {
 	jwsVerifier := &mockJWSVerifier{}
-	handler := server.NewApiHandler(config.ApiSettings{}, inmemory.NewStore(clock.RealClock{}), jwsVerifier, nil)
+	handler := server.NewApiHandler(config.ApiSettings{}, inmemory.NewStore(clock.RealClock{}), jwsVerifier, nil, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/user-service/v1/users", nil)
 	w := httptest.NewRecorder()

@@ -37,8 +37,14 @@ var serveCmd = &cobra.Command{
 			}
 		}()
 
-		apiServer := server.New("api", cfg.Api.Addr, nil,
-			server.NewApiHandler(settings.Api, settings.Storage, settings.JWSVerifier, settings.JWSSigner))
+		apiHandler := server.NewApiHandler(
+			settings.Api,
+			settings.Storage,
+			settings.JWSVerifier,
+			settings.JWSSigner,
+			settings.MsgProducer,
+		)
+		apiServer := server.New("api", cfg.Api.Addr, nil, apiHandler)
 		errCh := make(chan error, 1)
 		apiServer.Start(errCh)
 		err = <-errCh

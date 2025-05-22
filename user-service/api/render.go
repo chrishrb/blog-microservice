@@ -29,3 +29,11 @@ func (c AuthResponse) Render(w http.ResponseWriter, r *http.Request) error {
 func (c RefreshTokenRequest) Bind(r *http.Request) error {
 	return nil
 }
+
+func (c PasswordResetRequest) Bind(r *http.Request) error {
+	return nil
+}
+
+func (c PasswordResetConfirmation) Bind(r *http.Request) error {
+	return nil
+}

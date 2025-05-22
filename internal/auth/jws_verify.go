@@ -11,13 +11,14 @@ import (
 )
 
 type JWSVerifier interface {
-	ValidateJWS(jws string) (jwt.Token, error)
+	ValidateToken(jws string) (jwt.Token, error)
+	ValidatePasswordResetToken(jws string) (jwt.Token, error)
 }
 
 type LocalJWSVerifier struct {
-	publicKey     *ecdsa.PublicKey
-	issuer     string
-	audience   string
+	publicKey *ecdsa.PublicKey
+	issuer    string
+	audience  string
 }
 
 func NewLocalJWSVerifier(publicKeySource source.SourceProvider, issuer, audience string) (*LocalJWSVerifier, error) {
@@ -33,18 +34,28 @@ func NewLocalJWSVerifier(publicKeySource source.SourceProvider, issuer, audience
 
 	return &LocalJWSVerifier{
 		publicKey: pubKey,
-		issuer:     issuer,
-		audience:   audience,
+		issuer:    issuer,
+		audience:  audience,
 	}, nil
 }
 
-// ValidateJWS ensures that the critical JWT claims needed to ensure that we
+// ValidateToken ensures that the critical JWT claims needed to ensure that we
 // trust the JWT are present and with the correct values.
-func (v *LocalJWSVerifier) ValidateJWS(jwsString string) (jwt.Token, error) {
+func (v *LocalJWSVerifier) ValidateToken(jwsString string) (jwt.Token, error) {
 	return jwt.Parse(
 		[]byte(jwsString),
 		jwt.WithIssuer(v.issuer),
 		jwt.WithAudience(v.audience),
+		jwt.WithVerify(jwa.ES256, v.publicKey),
+	)
+}
+
+// ValidatePasswordToken ensures that the critical JWT claims needed to ensure that we
+// trust the JWT are present and with the correct values.
+func (v *LocalJWSVerifier) ValidatePasswordResetToken(jwsString string) (jwt.Token, error) {
+	return jwt.Parse(
+		[]byte(jwsString),
+		jwt.WithClaimValue(TypeClaim, TypePasswordReset),
 		jwt.WithVerify(jwa.ES256, v.publicKey),
 	)
 }

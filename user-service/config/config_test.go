@@ -1,7 +1,6 @@
 package config_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/chrishrb/blog-microservice/user-service/config"
@@ -13,7 +12,7 @@ import (
 func TestConfigure(t *testing.T) {
 	cfg := clone.Clone(&config.DefaultConfig)
 
-	settings, err := config.Configure(context.TODO(), cfg)
+	settings, err := config.Configure(t.Context(), cfg)
 	require.NoError(t, err)
 
 	wantApiSettings := config.ApiSettings{
@@ -35,7 +34,7 @@ func TestConfigureInMemoryStorage(t *testing.T) {
 	cfg := clone.Clone(&config.DefaultConfig)
 	cfg.Storage.Type = "in_memory"
 
-	settings, err := config.Configure(context.TODO(), cfg)
+	settings, err := config.Configure(t.Context(), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, settings.Storage)
 }

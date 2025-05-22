@@ -93,10 +93,10 @@ func TestDeleteComment(t *testing.T) {
 
 	// Create a comment
 	comment := &store.Comment{
-		ID:        commentID,
-		AuthorID:  userID,
-		PostID:    postID,
-		Content:   "Test comment content",
+		ID:       commentID,
+		AuthorID: userID,
+		PostID:   postID,
+		Content:  "Test comment content",
 	}
 	err = engine.SetComment(t.Context(), comment)
 	require.NoError(t, err)
@@ -141,10 +141,10 @@ func TestLookupComment(t *testing.T) {
 
 	// Create a comment
 	comment := &store.Comment{
-		ID:        commentID,
-		AuthorID:  userID,
-		PostID:    postID,
-		Content:   "Test comment content",
+		ID:       commentID,
+		AuthorID: userID,
+		PostID:   postID,
+		Content:  "Test comment content",
 	}
 	err = engine.SetComment(t.Context(), comment)
 	require.NoError(t, err)
@@ -210,10 +210,10 @@ func TestUpdateComment(t *testing.T) {
 
 	// Create a comment
 	comment := &store.Comment{
-		ID:        commentID,
-		AuthorID:  userID,
-		PostID:    postID,
-		Content:   "Original comment content",
+		ID:       commentID,
+		AuthorID: userID,
+		PostID:   postID,
+		Content:  "Original comment content",
 	}
 	err = engine.SetComment(t.Context(), comment)
 	require.NoError(t, err)
@@ -303,20 +303,20 @@ func TestListComments(t *testing.T) {
 	// Create multiple comments
 	commentID1 := uuid.New()
 	comment1 := &store.Comment{
-		ID:        commentID1,
-		AuthorID:  userID,
-		PostID:    postID,
-		Content:   "First comment",
+		ID:       commentID1,
+		AuthorID: userID,
+		PostID:   postID,
+		Content:  "First comment",
 	}
 	err = engine.SetComment(t.Context(), comment1)
 	require.NoError(t, err)
 
 	commentID2 := uuid.New()
 	comment2 := &store.Comment{
-		ID:        commentID2,
-		AuthorID:  userID,
-		PostID:    postID,
-		Content:   "Second comment",
+		ID:       commentID2,
+		AuthorID: userID,
+		PostID:   postID,
+		Content:  "Second comment",
 	}
 	err = engine.SetComment(t.Context(), comment2)
 	require.NoError(t, err)
@@ -344,4 +344,3 @@ func TestListComments(t *testing.T) {
 	assert.Contains(t, ids, commentID1)
 	assert.Contains(t, ids, commentID2)
 }
-

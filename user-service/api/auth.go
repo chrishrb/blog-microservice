@@ -1,14 +1,20 @@
 package api
 
 import (
+	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/chrishrb/blog-microservice/internal/api_utils"
 	"github.com/chrishrb/blog-microservice/internal/auth"
+	"github.com/chrishrb/blog-microservice/internal/transport"
 	"github.com/chrishrb/blog-microservice/user-service/service"
 	"github.com/chrishrb/blog-microservice/user-service/store"
 	"github.com/go-chi/render"
+	"github.com/google/uuid"
 )
+
+var InvalidTokenErr = errors.New("invalid or expired token")
 
 func (s *Server) LoginUser(w http.ResponseWriter, r *http.Request) {
 	req := new(LoginRequest)
@@ -40,13 +46,24 @@ func (s *Server) LoginUser(w http.ResponseWriter, r *http.Request) {
 		claims = append(claims, "all-users:read", "all-users:write")
 	}
 
-	accessToken, err := s.JWSSigner.CreateJWS(user.ID, claims)
+	accessToken, accessTokenExpiresIn, err := s.jwsSigner.CreateAccessToken(user.ID, claims)
 	if err != nil {
 		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
 	}
 
-	refreshToken, err := s.JWSSigner.CreateRefreshJWS(user.ID)
+	refreshToken, refreshTokenExpiresIn, err := s.jwsSigner.CreateRefreshToken(user.ID)
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
+		return
+	}
+
+	err = s.engine.SetToken(r.Context(), &store.Token{
+		UserID:  user.ID,
+		Token:   refreshToken,
+		TTL:     refreshTokenExpiresIn,
+		Revoked: false,
+	})
 	if err != nil {
 		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
@@ -55,7 +72,7 @@ func (s *Server) LoginUser(w http.ResponseWriter, r *http.Request) {
 	render.Render(w, r, &AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		ExpiresIn:    int(s.JWSSigner.GetAccessTokenExpiresIn().Seconds()),
+		ExpiresIn:    int(accessTokenExpiresIn.Seconds()),
 	})
 }
 
@@ -82,7 +99,7 @@ func (s *Server) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	jwt, err := s.JWSVerifier.ValidateJWS(req.RefreshToken)
+	jwt, err := s.jwsVerifier.ValidateToken(req.RefreshToken)
 	if err != nil {
 		_ = render.Render(w, r, api_utils.ErrUnauthorized)
 		return
@@ -117,36 +134,114 @@ func (s *Server) RefreshToken(w http.ResponseWriter, r *http.Request) {
 		claims = append(claims, "all-users:read", "all-users:write")
 	}
 
-	accessToken, err := s.JWSSigner.CreateJWS(user.ID, claims)
+	accessToken, accessTokenExpiresIn, err := s.jwsSigner.CreateAccessToken(user.ID, claims)
 	if err != nil {
 		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
 	}
 
-	refreshToken, err := s.JWSSigner.CreateRefreshJWS(user.ID)
+	refreshToken, refreshTokenExpiresIn, err := s.jwsSigner.CreateRefreshToken(user.ID)
 	if err != nil {
 		_ = render.Render(w, r, api_utils.ErrInternalError(err))
 		return
 	}
 
-	s.engine.SetToken(r.Context(), &store.Token{
+	err = s.engine.SetToken(r.Context(), &store.Token{
 		UserID:  user.ID,
 		Token:   refreshToken,
-		TTL:     s.JWSSigner.GetRefreshTokenExpiresIn(),
+		TTL:     refreshTokenExpiresIn,
 		Revoked: false,
 	})
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
+		return
+	}
 
 	render.Render(w, r, &AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
-		ExpiresIn:    int(s.JWSSigner.GetAccessTokenExpiresIn().Seconds()),
+		ExpiresIn:    int(accessTokenExpiresIn.Seconds()),
 	})
 }
 
 func (s *Server) RequestPasswordReset(w http.ResponseWriter, r *http.Request) {
-	// TODO: Implement password reset request logic
+	req := new(PasswordResetRequest)
+	if err := render.Bind(r, req); err != nil {
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(err))
+		return
+	}
+
+	user, err := s.engine.LookupUserByEmail(r.Context(), string(req.Email))
+	if err != nil || user == nil || user.Status != store.StatusActive {
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(InvalidTokenErr))
+		return
+	}
+
+	token, expiresIn, err := s.jwsSigner.CreatePasswordResetToken(user.ID)
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
+		return
+	}
+
+	data, err := json.Marshal(transport.PasswordResetEvent{
+		Email:     string(req.Email),
+		Token:     token,
+		ExpiresIn: int(expiresIn.Seconds()),
+	})
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
+		return
+	}
+
+	err = s.producer.Produce(r.Context(), transport.PasswordResetTopic, &transport.Message{
+		ID:   uuid.New().String(),
+		Type: transport.PasswordResetTopic,
+		Data: data,
+	})
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
+		return
+	}
 }
 
 func (s *Server) ResetPassword(w http.ResponseWriter, r *http.Request, token string) {
-	// TODO: Implement password reset logic
+	// Validate request
+	req := new(PasswordResetConfirmation)
+	if err := render.Bind(r, req); err != nil {
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(err))
+		return
+	}
+	if req.NewPassword != req.ConfirmPassword {
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(errors.New("passwords do not match")))
+		return
+	}
+
+	// Validate the token and user
+	tokenData, err := s.jwsVerifier.ValidateToken(token)
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(InvalidTokenErr))
+		return
+	}
+	userID, err := auth.GetUserIDFromToken(tokenData)
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(InvalidTokenErr))
+		return
+	}
+	user, err := s.engine.LookupUser(r.Context(), userID)
+	if err != nil || user == nil || user.Status != store.StatusActive {
+		_ = render.Render(w, r, api_utils.ErrInvalidRequest(InvalidTokenErr))
+		return
+	}
+
+	// Update the user's password
+	user.PasswordHash, err = service.HashPassword(req.NewPassword)
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
+		return
+	}
+	err = s.engine.SetUser(r.Context(), user)
+	if err != nil {
+		_ = render.Render(w, r, api_utils.ErrInternalError(err))
+		return
+	}
 }
