@@ -1,5 +1,5 @@
 api:
-  addr: ":9410"
+  addr: ":9412"
 general:
   org_name: "Blog Microservice"
   website_base_url: "https://example.com"
